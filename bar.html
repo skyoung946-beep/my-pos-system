@@ -207,7 +207,6 @@
         `).join('');
     }
 
-    // --- SECURE AUTH LOGIC ---
     function openPinGate(id) {
         bizId = id; dbPath = `shops/${id}`;
         document.getElementById('pin-biz-name').innerText = id + " SECURE LOGIN";
@@ -232,7 +231,6 @@
         pad.appendChild(b);
     });
 
-    // --- SECURE DELETE LOGIC ---
     function deleteCurrentBusiness() {
         db.ref(dbPath + '/staffList/0').once('value', s => {
             const admin = s.val();
@@ -251,7 +249,6 @@
         });
     }
 
-    // --- ATOMIC TRANSACTION LOGIC ---
     function processSale() {
         if(!cart.length) return;
         const today = new Date().toISOString().split('T')[0];
