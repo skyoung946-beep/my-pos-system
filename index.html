@@ -15,14 +15,24 @@
         }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* PROFESSIONAL PORTAL */
+        @keyframes blinker {
+            50% { background-color: #fee2e2; border-color: var(--red); transform: scale(0.98); }
+        }
+        .low-stock-alert { animation: blinker 1.5s linear infinite; border: 2px solid var(--red) !important; }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .pulse-badge { animation: pulse-red 2s infinite; }
+
         #directory-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .portal-container { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); width: 80%; max-width: 900px; text-align: center; }
         .shop-card { background: white; color: var(--text); border-radius: 16px; padding: 20px; cursor: pointer; width: 160px; transition: 0.3s; border: 2px solid transparent; }
         .shop-card:hover { transform: translateY(-8px); border-color: var(--accent); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
         .shop-logo { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; margin-bottom: 10px; }
 
-        /* MAIN UI */
         #main-wrapper { display: none; width: 100vw; height: 100vh; flex-direction: row; }
         .sidebar { width: 260px; background: white; border-right: 2px solid var(--border); display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; }
         .nav-btn { background: none; border: none; color: #64748b; padding: 14px; border-radius: 12px; text-align: left; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 5px; transition: 0.2s; }
@@ -30,7 +40,6 @@
         .main-content { flex: 1; padding: 25px; overflow-y: auto; }
         .cart-section { width: 320px; background: #fffcf5; border-left: 2px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
         
-        /* CATEGORY CHIPS */
         .cat-chip { padding: 8px 15px; background: white; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; margin-right: 8px; transition: 0.2s; }
         .cat-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
 
@@ -38,7 +47,7 @@
         .item-card { background: white; border: 1px solid var(--border); padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; position: relative; border-bottom: 3px solid var(--accent); }
         .stock-tag { position: absolute; top: 5px; right: 5px; font-size: 10px; padding: 2px 6px; border-radius: 5px; font-weight: bold; }
         
-        .chart-box { background: white; padding: 20px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; height: 250px; }
+        .chart-box { background: white; padding: 20px; border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; height: 300px; }
         .stat-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); flex: 1; text-align: center; }
 
         #login-overlay { position: fixed; inset: 0; background: white; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -47,9 +56,14 @@
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #f1f5f9; }
         .page-content { display: none; }
         .page-content.active { display: block; }
+        .inline-edit { width: 60px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; }
     </style>
 </head>
 <body>
+
+<div id="backup-toast" style="position: fixed; bottom: 20px; right: 20px; background: #3b3a1e; color: white; padding: 12px 20px; border-radius: 8px; display: none; font-size: 12px; z-index: 10006; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+    🔄 Auto-backup complete...
+</div>
 
 <div id="directory-overlay">
     <div class="portal-container">
@@ -86,15 +100,18 @@
         
         <nav style="flex:1">
             <button onclick="showPage('sales-page', this)" class="nav-btn active">Terminal (POS)</button>
+            <button onclick="showPage('purchase-page', this); loadPurchases();" class="nav-btn">Purchase Records</button>
             <button onclick="showPage('discrepancy-page', this)" class="nav-btn">Cash Log / Issues</button>
             <div id="admin-section" style="display:none;">
-                <button onclick="showPage('stock-page', this)" class="nav-btn">Inventory & Category</button>
-                <button onclick="showPage('expense-page', this)" class="nav-btn">Expense Tracker</button>
-                <button onclick="showPage('staff-page', this)" class="nav-btn">Staff Access</button>
-                <button onclick="showPage('report-page', this); loadReports();" class="nav-btn">Annual Analytics</button>
+                <button onclick="showPage('stock-page', this)" id="nav-inventory" class="nav-btn">Inventory & Category</button>
+                <button onclick="showPage('expense-page', this)" id="nav-expense" class="nav-btn">Expense Tracker</button>
+                <button onclick="showPage('staff-page', this)" id="nav-staff" class="nav-btn">Staff Access</button>
+                <button onclick="showPage('report-page', this); loadReports();" id="nav-reports" class="nav-btn">Annual Analytics</button>
             </div>
         </nav>
-        <button onclick="location.reload()" class="nav-btn" style="color:var(--red); border:1px solid #fee2e2">Sign Out</button>
+        <button onclick="showPage('monthly-page', this); loadMonthlyReports();" class="nav-btn">Monthly Analytics</button>
+
+
     </div>
 
     <div class="main-content">
@@ -103,7 +120,58 @@
             <input type="text" placeholder="Search product..." oninput="renderPOS('', this.value)" style="width:100%; padding:14px; border-radius:12px; border:1px solid var(--border); margin-bottom:20px;">
             <div id="pos-grid" class="grid"></div>
         </div>
+        <div id="monthly-page" class="page-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0">Monthly Deep-Dive</h2>
+        <button onclick="generateDayReport()" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:bold;">📤 Send Day Summary</button>
+    </div>
 
+    <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <div class="stat-card" style="padding:10px; border-top: 3px solid var(--accent);">
+            <div style="font-size:11px; color:#64748b">Month Revenue</div>
+            <div id="m-stat-rev" style="font-size:18px; font-weight:bold;">₵0.00</div>
+        </div>
+        <div class="stat-card" style="padding:10px; border-top: 3px solid var(--green);">
+            <div style="font-size:11px; color:#64748b">Month Profit</div>
+            <div id="m-stat-profit" style="font-size:18px; font-weight:bold;">₵0.00</div>
+        </div>
+        <div class="stat-card" style="padding:10px; border-top: 3px solid var(--red);">
+            <div style="font-size:11px; color:#64748b">Month Expenses</div>
+            <div id="m-stat-exp" style="font-size:18px; font-weight:bold;">₵0.00</div>
+        </div>
+    </div>
+
+    <div class="chart-box" style="height: 220px !important; padding:15px; background:white; border-radius:12px; border:1px solid var(--border);">
+        <h3 style="margin:0 0 10px 0; font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:1px;">Daily Revenue Trend</h3>
+        <div style="height:160px;"><canvas id="monthChart"></canvas></div>
+    </div>
+</div>
+<div id="monthly-page" class="page-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0">Monthly Deep-Dive</h2>
+        <button onclick="generateDayReport()" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:bold;">📤 Send Day Summary</button>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <div class="stat-card" style="padding:10px; border-top: 3px solid var(--accent);">
+            <div style="font-size:11px; color:#64748b">Month Revenue</div>
+            <div id="m-stat-rev" style="font-size:18px; font-weight:bold;">₵0.00</div>
+        </div>
+        <div class="stat-card" style="padding:10px; border-top: 3px solid var(--green);">
+            <div style="font-size:11px; color:#64748b">Month Profit</div>
+            <div id="m-stat-profit" style="font-size:18px; font-weight:bold;">₵0.00</div>
+        </div>
+        <div class="stat-card" style="padding:10px; border-top: 3px solid var(--red);">
+            <div style="font-size:11px; color:#64748b">Month Expenses</div>
+            <div id="m-stat-exp" style="font-size:18px; font-weight:bold;">₵0.00</div>
+        </div>
+    </div>
+
+    <div class="chart-box" style="height: 220px !important; padding:15px; background:white; border-radius:12px; border:1px solid var(--border);">
+        <h3 style="margin:0 0 10px 0; font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:1px;">Daily Revenue Trend</h3>
+        <div style="height:160px;"><canvas id="monthChart"></canvas></div>
+    </div>
+</div>
         <div id="report-page" class="page-content">
             <h2>Annual Performance</h2>
             <div style="display:flex; gap:15px; margin-bottom:20px;">
@@ -112,12 +180,29 @@
                     <div id="stat-rev" style="font-size:20px; font-weight:bold; color:var(--green)">₵0.00</div>
                 </div>
                 <div class="stat-card">
+                    <div style="font-size:12px; color:#64748b">Estimated Profit</div>
+                    <div id="stat-profit" style="font-size:20px; font-weight:bold; color:var(--accent)">₵0.00</div>
+                </div>
+                <div class="stat-card">
                     <div style="font-size:12px; color:#64748b">Year Expenses</div>
                     <div id="stat-exp" style="font-size:20px; font-weight:bold; color:var(--red)">₵0.00</div>
                 </div>
             </div>
-            <div class="chart-box"><canvas id="perfChart"></canvas></div>
-            <button onclick="exportFullHistoryExcel()" style="padding:10px 15px; background:var(--green); color:white; border:none; border-radius:8px; cursor:pointer; margin-bottom:15px;">📥 Download Year Audit (.xlsx)</button>
+            
+            <div class="chart-box">
+                <h3 style="margin-top:0; font-size:14px;">Revenue vs Months</h3>
+                <canvas id="perfChart"></canvas>
+            </div>
+
+            <div class="chart-box" style="margin-top:20px;">
+                <h3 style="margin-top:0; font-size:14px;">Top Selling Products (Volume)</h3>
+                <canvas id="topItemChart"></canvas>
+            </div>
+
+            <div style="margin: 20px 0; display:flex; gap:10px; flex-wrap:wrap;">
+                <button onclick="exportFullHistoryExcel()" style="padding:10px 15px; background:var(--green); color:white; border:none; border-radius:8px; cursor:pointer;">📥 Download Year Audit (.xlsx)</button>
+                <button onclick="manualBackup()" style="padding:10px 15px; background:#475569; color:white; border:none; border-radius:8px; cursor:pointer;">💾 Sync Local Backup</button>
+            </div>
             <table id="report-table">
                 <thead><tr><th>Date</th><th>Gross Sales</th><th>Expenses</th><th>Net</th></tr></thead>
                 <tbody id="report-body"></tbody>
@@ -136,18 +221,31 @@
 
         <div id="stock-page" class="page-content">
             <h2>Inventory Management</h2>
-            <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div style="margin-bottom:15px; display:flex; gap:10px; flex-wrap: wrap; align-items: center;">
+                <button onclick="exportInventoryToExcel()" style="padding:10px; background:#107c41; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📥 Export to Excel</button>
+                <input type="file" id="excel-import-input" style="display:none;" onchange="importInventoryFromExcel(event)">
+                <button onclick="document.getElementById('excel-import-input').click()" style="padding:10px; background:#b8860b; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">📤 Import from Excel</button>
+                <button onclick="clearAllItems()" id="btn-clear-inventory" style="padding:10px; background:var(--red); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">🗑️ Delete All Items</button>
+                
+                <div id="low-stock-badge" style="display:none; padding: 10px 15px; background: var(--red); color: white; border-radius: 30px; font-weight: 800; font-size: 12px; margin-left: 10px;">
+                    ⚠️ <span id="low-stock-count">0</span> ITEMS LOW
+                </div>
+
+                <input type="text" placeholder="🔍 Search Inventory..." oninput="renderInventory(this.value)" style="padding:10px; border-radius:8px; border:1px solid var(--border); min-width: 200px; margin-left: auto;">
+            </div>
+
+            <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
                 <input type="text" id="st-name" placeholder="Item Name" style="padding:10px; border-radius:8px; border:1px solid var(--border);">
                 <input type="text" id="st-cat" placeholder="Category (e.g. Drinks)" style="padding:10px; border-radius:8px; border:1px solid var(--border);">
-                <input type="number" id="st-price" placeholder="Price" style="padding:10px; border-radius:8px; border:1px solid var(--border);">
+                <input type="number" id="st-cost" placeholder="Cost Price (Buying Price)" style="padding:10px; border-radius:8px; border:1px solid var(--border);">
+                <input type="number" id="st-price" placeholder="Selling Price" style="padding:10px; border-radius:8px; border:1px solid var(--border);">
                 <input type="number" id="st-qty" placeholder="Stock Level" style="padding:10px; border-radius:8px; border:1px solid var(--border);">
-                <button onclick="addItem()" style="grid-column: span 2; padding:12px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:bold;">Register Product</button>
+                <button onclick="addItem()" style="padding:12px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:bold;">Register Product</button>
             </div>
-            <table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Action</th></tr></thead><tbody id="stock-body"></tbody></table>
+            <table><thead><tr><th>Product</th><th>Category</th><th>Cost</th><th>Price (Edit)</th><th>Margin %</th><th>Stock (Edit)</th><th>Action</th></tr></thead><tbody id="stock-body"></tbody></table>
             
-            <div style="margin-top:50px; padding:20px; border:1px dashed #fca5a5; border-radius:15px; background:#fff1f1;">
+            <div id="danger-zone-admin" style="display:none; margin-top:50px; padding:20px; border:1px dashed #fca5a5; border-radius:15px; background:#fff1f1;">
                 <h4 style="color:#b91c1c; margin-top:0;">Danger Zone</h4>
-                <p style="font-size:12px; color:#7f1d1d;">Permanently remove this branch and all its data from the cloud.</p>
                 <button onclick="deleteCurrentBusiness()" style="background:#dc2626; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer;">DELETE BUSINESS PERMANENTLY</button>
             </div>
         </div>
@@ -157,9 +255,25 @@
             <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
                 <input type="text" id="staff-name-in" placeholder="Full Name" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
                 <input type="number" id="staff-pin-in" placeholder="Login PIN" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                <select id="staff-role-in" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                    <option value="staff">Staff (Terminal & Cash Only)</option>
+                    <option value="supervisor">Supervisor (Terminal, Cash & Inventory)</option>
+                    <option value="admin">Admin (Full Access)</option>
+                </select>
                 <button onclick="addStaffMember()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px;">Authorize User</button>
             </div>
-            <table><thead><tr><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody id="staff-body"></tbody></table>
+            <table><thead><tr><th>Name</th><th>PIN</th><th>Role</th><th>Action</th></tr></thead><tbody id="staff-body"></tbody></table>
+        </div>
+
+        <div id="purchase-page" class="page-content">
+            <h2>Stock Purchase Records</h2>
+            <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
+                <input type="text" id="pur-item" placeholder="Item Name / Batch" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                <input type="text" id="pur-supplier" placeholder="Supplier Name" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                <input type="number" id="pur-amt" placeholder="Total Cost ₵" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                <button onclick="addPurchase()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:bold;">Log Purchase</button>
+            </div>
+            <table id="purchase-table"><thead><tr><th>Date</th><th>Item</th><th>Supplier</th><th>Amount</th></tr></thead><tbody id="purchase-body"></tbody></table>
         </div>
 
         <div id="discrepancy-page" class="page-content">
@@ -178,7 +292,21 @@
     </div>
 
     <div class="cart-section">
-        <h3 style="margin-top:0">Order Details</h3>
+        <h3 style="margin-top:0">Order Details (<span id="cart-count">0</span>/10)</h3>
+        <div style="background: #f1f5f9; padding: 12px; border-radius: 12px; border: 2px solid #cbd5e1; margin-bottom: 10px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div id="btn-cash" onclick="setPayment('Cash')" style="cursor:pointer; border: 3px solid #b8860b; background: #fefce8; padding: 10px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 18px;">💵</div><div style="font-weight: bold; font-size:10px;">CASH</div>
+        </div>
+        <div id="btn-momo" onclick="setPayment('MoMo')" style="cursor:pointer; border: 3px solid #e2e8f0; background: white; padding: 10px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 18px;">📱</div><div style="font-weight: bold; font-size:10px;">MOMO</div>
+        </div>
+    </div>
+    <div id="momo-ref-box" style="display:none; margin-top: 10px;">
+        <input type="text" id="momo-ref-input" placeholder="Ref Number" style="width: 100%; padding: 8px; border: 1px solid #b8860b; border-radius: 6px; font-size: 12px;">
+    </div>
+    <input type="hidden" id="selected-payment" value="Cash">
+</div>
         <div id="cart-list" style="flex:1; overflow-y:auto;"></div>
         <div style="border-top:2px solid var(--border); padding-top:15px;">
             <div style="display:flex; justify-content:space-between; font-size:24px; font-weight:900; color:var(--primary);">
@@ -194,7 +322,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let registry = {}, bizId = "", dbPath = "", inventory = [], cart = [], staffList = [], typedPin = "", currentUser = null, perfChart = null;
+    let registry = {}, bizId = "", dbPath = "", inventory = [], cart = [], staffList = [], typedPin = "", currentUser = null, perfChart = null, topItemChart = null;
+    let lastLowStockCount = 0;
 
     db.ref('registry').on('value', s => { registry = s.val() || {}; renderDirectory(); });
 
@@ -207,7 +336,6 @@
         `).join('');
     }
 
-    // --- SECURE AUTH LOGIC ---
     function openPinGate(id) {
         bizId = id; dbPath = `shops/${id}`;
         document.getElementById('pin-biz-name').innerText = id + " SECURE LOGIN";
@@ -222,67 +350,22 @@
             if(k==='C') typedPin = "";
             else if(k==='OK') {
                 const user = staffList.find(u => u.pin === typedPin);
-                if(user) { 
-                    currentUser = JSON.parse(JSON.stringify(user)); 
-                    launch(); 
-                } else { alert("ACCESS DENIED"); typedPin = ""; }
+                if(user) { currentUser = JSON.parse(JSON.stringify(user)); launch(); } 
+                else { alert("ACCESS DENIED"); typedPin = ""; }
             } else if(typedPin.length < 4) typedPin += k;
             document.getElementById('pin-dots').innerText = "*".repeat(typedPin.length) || "****";
         };
         pad.appendChild(b);
     });
 
-    // --- SECURE DELETE LOGIC ---
-    function deleteCurrentBusiness() {
-        db.ref(dbPath + '/staffList/0').once('value', s => {
-            const admin = s.val();
-            if(!currentUser || currentUser.pin !== admin.pin) {
-                alert("Critical Security Error: You are not the Master Admin.");
-                return;
-            }
-            const confirmation = prompt(`Type DELETE to confirm permanent destruction of ${bizId}:`);
-            if(confirmation === "DELETE") {
-                db.ref('registry/' + bizId).remove();
-                db.ref('shops/' + bizId).remove();
-                db.ref('reports/' + bizId).remove();
-                alert("Business successfully destroyed.");
-                location.reload();
-            }
-        });
-    }
-
-    // --- ATOMIC TRANSACTION LOGIC ---
-    function processSale() {
-        if(!cart.length) return;
-        const today = new Date().toISOString().split('T')[0];
-        let total = 0;
-        const itemsToUpdate = JSON.parse(JSON.stringify(cart));
-
-        db.ref(dbPath + '/inventory').transaction((currentInventory) => {
-            if (currentInventory) {
-                itemsToUpdate.forEach(cartItem => {
-                    const dbItem = currentInventory.find(i => i.id === cartItem.id);
-                    if (dbItem && dbItem.stock > 0) {
-                        dbItem.stock--;
-                        total += parseFloat(dbItem.price);
-                    }
-                });
-            }
-            return currentInventory;
-        }, (error, committed) => {
-            if (committed) {
-                db.ref(`reports/${bizId}/${today}/sales`).push({ 
-                    time: new Date().toLocaleTimeString(), 
-                    staff: currentUser.name, 
-                    total: total.toFixed(2), 
-                    itemDetails: itemsToUpdate 
-                });
-                cart = []; updateCartUI();
-                alert("Success");
-            } else {
-                alert("Transaction Failed: Stock error.");
-            }
-        });
+    function playLowStockBeep() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
 
     function launch() {
@@ -291,7 +374,15 @@
         document.getElementById('main-wrapper').style.display='flex';
         document.getElementById('side-biz-name').innerText = bizId;
         document.getElementById('side-user').innerText = "Session: " + currentUser.name;
-        if(currentUser.role === 'admin') document.getElementById('admin-section').style.display='block';
+        
+        const isAdmin = currentUser.role === 'admin', isSupervisor = currentUser.role === 'supervisor';
+        document.getElementById('admin-section').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
+        document.getElementById('nav-inventory').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
+        document.getElementById('nav-expense').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('nav-staff').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('danger-zone-admin').style.display = isAdmin ? 'block' : 'none';
+
         const logo = registry[bizId]?.logo;
         if(logo) document.getElementById('side-logo').innerHTML = `<img src="${logo}" style="width:50px; height:50px; border-radius:8px; object-fit:cover;">`;
         
@@ -299,195 +390,355 @@
             const d = s.val() || {};
             inventory = d.inventory || [];
             staffList = d.staffList || [];
+            
+            let lowCount = inventory.filter(i => i.stock <= 5).length;
+            if(lowCount > lastLowStockCount) playLowStockBeep();
+            lastLowStockCount = lowCount;
+            
+            const badge = document.getElementById('low-stock-badge');
+            if(lowCount > 0) {
+                badge.style.display = 'block';
+                document.getElementById('low-stock-count').innerText = lowCount;
+                badge.classList.add('pulse-badge');
+            } else badge.style.display = 'none';
+
             renderCategories(); renderPOS(); renderInventory(); renderStaff();
         });
         loadExpenses();
     }
 
-    function saveNewBusiness() {
-        const id = document.getElementById('reg-name').value.trim();
-        const pin = document.getElementById('reg-pin').value;
-        const file = document.getElementById('reg-logo-file').files[0];
-        if(!id || !pin) return;
-        const finalize = (logo) => {
-            db.ref('registry/'+id).set({logo});
-            db.ref('shops/'+id).set({ staffList:[{name:"Administrator", pin, role:"admin"}], inventory:[] });
-            location.reload();
-        };
-        if(file) { const reader = new FileReader(); reader.onloadend = () => finalize(reader.result); reader.readAsDataURL(file); }
-        else finalize("");
+    function showPage(pageId, btn) {
+        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+    }
+
+    function addItem() {
+        const name = document.getElementById('st-name').value, cat = document.getElementById('st-cat').value || "General", cost = document.getElementById('st-cost').value || 0, price = document.getElementById('st-price').value, qty = document.getElementById('st-qty').value;
+        if(!name || !price || !qty) return alert("Fill all fields");
+        inventory.push({ id: Date.now(), name, category: cat, costPrice: cost, price, stock: qty });
+        db.ref(dbPath + '/inventory').set(inventory);
+    }
+
+    function updateInventory(id, field, val) {
+        const idx = inventory.findIndex(i => i.id === id);
+        if(idx > -1) { inventory[idx][field] = val; db.ref(dbPath + '/inventory').set(inventory); }
+    }
+
+    function renderInventory(filter = "") {
+        document.getElementById('stock-body').innerHTML = inventory.filter(i => i.name.toLowerCase().includes(filter.toLowerCase())).map(i => {
+            const margin = i.costPrice > 0 ? (((i.price - i.costPrice) / i.price) * 100).toFixed(1) : 0;
+            return `<tr><td><b>${i.name}</b></td><td>${i.category}</td><td>₵${i.costPrice || 0}</td><td>₵<input type="number" class="inline-edit" value="${i.price}" onchange="updateInventory(${i.id}, 'price', this.value)"></td><td>${margin}%</td><td><input type="number" class="inline-edit" value="${i.stock}" onchange="updateInventory(${i.id}, 'stock', this.value)"></td><td><button onclick="inventory=inventory.filter(x=>x.id!=${i.id}); db.ref(dbPath+'/inventory').set(inventory)">Del</button></td></tr>`;
+        }).join('');
     }
 
     function renderCategories() {
         const cats = ["All", ...new Set(inventory.map(i => i.category || "General"))];
-        document.getElementById('cat-scroll').innerHTML = cats.map(c => `
-            <div class="cat-chip" onclick="renderPOS('${c === 'All' ? '' : c}')">${c}</div>
-        `).join('');
+        document.getElementById('cat-scroll').innerHTML = cats.map(c => `<div class="cat-chip" onclick="renderPOS('${c === 'All' ? '' : c}')">${c}</div>`).join('');
     }
 
     function renderPOS(catFilter = "", nameFilter = "") {
-        const grid = document.getElementById('pos-grid');
-        grid.innerHTML = inventory.filter(i => {
-            const matchesCat = !catFilter || i.category === catFilter;
-            const matchesName = i.name.toLowerCase().includes(nameFilter.toLowerCase());
-            return matchesCat && matchesName;
-        }).map(i => {
+        document.getElementById('pos-grid').innerHTML = inventory.filter(i => (!catFilter || i.category === catFilter) && i.name.toLowerCase().includes(nameFilter.toLowerCase())).map(i => {
             let sC = i.stock <= 0 ? "background:#fee2e2;color:#991b1b" : (i.stock <= 5 ? "background:#ffedd5;color:#9a3412" : "background:#dcfce7;color:#166534");
-            return `<div class="item-card" onclick="addToCart(${i.id})">
-                <span class="stock-tag" style="${sC}">${i.stock}</span>
-                <div style="font-size:10px; color:var(--accent); font-weight:bold">${i.category || 'General'}</div>
-                <b>${i.name}</b><br>₵${i.price}
-            </div>`;
+            return `<div class="item-card ${i.stock <= 5 && i.stock > 0 ? 'low-stock-alert' : ''}" onclick="addToCart(${i.id})"><span class="stock-tag" style="${sC}">${i.stock}</span><div style="font-size:10px; color:var(--accent); font-weight:bold">${i.category}</div><b>${i.name}</b><br>₵${i.price}</div>`;
         }).join('');
     }
 
     function addToCart(id) {
         const item = inventory.find(i => i.id === id);
-        if(!item || item.stock <= 0) return alert("Out of stock!");
-        cart.push({...item});
-        updateCartUI();
+        if(!item || item.stock <= 0) return alert("No Stock");
+        cart.push({...item}); updateCartUI();
     }
 
     function updateCartUI() {
         let total = 0;
-        document.getElementById('cart-list').innerHTML = cart.map(c => {
-            total += parseFloat(c.price);
-            return `<div class="cart-item"><span>${c.name}</span><span>₵${c.price}</span></div>`;
-        }).join('');
+        document.getElementById('cart-list').innerHTML = cart.map(c => { total += parseFloat(c.price); return `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee"><span>${c.name}</span><span>₵${c.price}</span></div>`; }).join('');
         document.getElementById('cart-total').innerText = "₵" + total.toFixed(2);
+        document.getElementById('cart-count').innerText = cart.length;
+    }
+
+    function processSale() {
+        if(!cart.length) return;
+        const today = new Date().toISOString().split('T')[0];
+        let total = 0, profit = 0;
+        const items = JSON.parse(JSON.stringify(cart));
+        db.ref(dbPath + '/inventory').transaction(inv => {
+            if(inv) {
+                items.forEach(c => {
+                    const dbI = inv.find(x => x.id === c.id);
+                    if(dbI && dbI.stock > 0) { dbI.stock--; total += parseFloat(dbI.price); profit += (dbI.price - (dbI.costPrice || 0)); }
+                });
+            }
+            return inv;
+        }, (err, comm) => {
+            if(comm) {
+                db.ref(`reports/${bizId}/${today}/sales`).push({ staff: currentUser.name, total: total.toFixed(2), profit: profit.toFixed(2), itemDetails: items });
+                cart = []; updateCartUI(); alert("Sale OK");
+            }
+        });
     }
 
     function loadReports() {
         db.ref(`reports/${bizId}`).once('value', s => {
-            const allData = s.val() || {};
-            const today = new Date().toISOString().split('T')[0];
-            const historyHTML = [];
-            const monthRev = Array(12).fill(0);
-            let yearGross = 0, yearExp = 0;
-            Object.keys(allData).sort().reverse().forEach(date => {
-                const daySales = allData[date].sales || {};
-                const dayExps = allData[date].expenses || {};
-                let dayGross = 0, dayExpTotal = 0;
-                Object.values(daySales).forEach(s => dayGross += parseFloat(s.total));
-                Object.values(dayExps).forEach(e => dayExpTotal += parseFloat(e.amount));
-                yearGross += dayGross;
-                yearExp += dayExpTotal;
-                const m = new Date(date).getMonth();
-                monthRev[m] += dayGross;
-                if (date !== today) {
-                    historyHTML.push(`<tr><td>${date}</td><td>₵${dayGross.toFixed(2)}</td><td style="color:red">₵${dayExpTotal.toFixed(2)}</td><td><b>₵${(dayGross-dayExpTotal).toFixed(2)}</b></td></tr>`);
-                }
+            const data = s.val() || {}, productCount = {}, monthRev = Array(12).fill(0);
+            let yearG = 0, yearE = 0, yearP = 0, history = [];
+
+            Object.keys(data).sort().reverse().forEach(date => {
+                let dG = 0, dE = 0, dP = 0;
+                Object.values(data[date].sales || {}).forEach(s => { 
+                    dG += parseFloat(s.total); dP += parseFloat(s.profit || 0);
+                    if(s.itemDetails) s.itemDetails.forEach(i => productCount[i.name] = (productCount[i.name] || 0) + 1);
+                });
+                Object.values(data[date].expenses || {}).forEach(e => dE += parseFloat(e.amount));
+                Object.values(data[date].purchases || {}).forEach(p => dE += parseFloat(p.amount));
+                
+                yearG += dG; yearE += dE; yearP += dP;
+                monthRev[new Date(date).getMonth()] += dG;
+                history.push(`<tr><td>${date}</td><td>₵${dG.toFixed(2)}</td><td>₵${dE.toFixed(2)}</td><td style="color:green">₵${(dG-dE).toFixed(2)}</td></tr>`);
             });
-            document.getElementById('report-body').innerHTML = historyHTML.join('');
-            document.getElementById('stat-rev').innerText = "₵"+yearGross.toFixed(2);
-            document.getElementById('stat-exp').innerText = "₵"+yearExp.toFixed(2);
-            updateChart(monthRev);
+
+            document.getElementById('stat-rev').innerText = "₵" + yearG.toFixed(2);
+            document.getElementById('stat-profit').innerText = "₵" + yearP.toFixed(2);
+            document.getElementById('stat-exp').innerText = "₵" + yearE.toFixed(2);
+            document.getElementById('report-body').innerHTML = history.join('');
+
+            if(perfChart) perfChart.destroy();
+            perfChart = new Chart(document.getElementById('perfChart'), {
+                type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [{ label: 'Revenue', data: monthRev, borderColor: '#b8860b', tension: 0.3, fill: true, backgroundColor: 'rgba(184,134,11,0.1)' }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const top = Object.entries(productCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
+            if(topItemChart) topItemChart.destroy();
+            topItemChart = new Chart(document.getElementById('topItemChart'), {
+                type: 'bar', data: { labels: top.map(x=>x[0]), datasets: [{ label: 'Qty Sold', data: top.map(x=>x[1]), backgroundColor: '#3b3a1e' }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
         });
     }
 
-    function updateChart(data) {
-        const ctx = document.getElementById('perfChart').getContext('2d');
-        if(perfChart) perfChart.destroy();
-        perfChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                datasets: [{ label: 'Gross Revenue ₵', data: data, borderColor: '#b8860b', tension: 0.3, fill: true, backgroundColor: 'rgba(184, 134, 11, 0.1)' }]
-            },
-            options: { maintainAspectRatio: false }
-        });
+    function addStaffMember() {
+        const n = document.getElementById('staff-name-in').value, p = document.getElementById('staff-pin-in').value, r = document.getElementById('staff-role-in').value;
+        if(n && p) { staffList.push({name:n, pin:p, role:r}); db.ref(dbPath+'/staffList').set(staffList); }
+    }
+
+    function renderStaff() {
+        document.getElementById('staff-body').innerHTML = staffList.map((s, i) => `<tr><td>${s.name}</td><td>****</td><td>${s.role}</td><td><button onclick="staffList.splice(${i},1); db.ref(dbPath+'/staffList').set(staffList)">X</button></td></tr>`).join('');
     }
 
     function addExpense() {
-        const n = document.getElementById('exp-name').value, a = document.getElementById('exp-amt').value;
-        if(!n || !a) return;
-        const today = new Date().toISOString().split('T')[0];
-        db.ref(`reports/${bizId}/${today}/expenses`).push({ description: n, amount: a, time: new Date().toLocaleTimeString() });
-        document.getElementById('exp-name').value = ""; document.getElementById('exp-amt').value = "";
-        loadExpenses();
+        const n = document.getElementById('exp-name').value, a = document.getElementById('exp-amt').value, t = new Date().toISOString().split('T')[0];
+        if(n && a) db.ref(`reports/${bizId}/${t}/expenses`).push({ name:n, amount:a });
     }
 
     function loadExpenses() {
-        const today = new Date().toISOString().split('T')[0];
-        db.ref(`reports/${bizId}/${today}/expenses`).on('value', s => {
-            const data = s.val() || {};
-            document.getElementById('expense-body').innerHTML = Object.values(data).map(e => `
-                <tr><td>${today}</td><td>${e.description}</td><td style="color:red">₵${e.amount}</td></tr>
-            `).join('');
+        const t = new Date().toISOString().split('T')[0];
+        db.ref(`reports/${bizId}/${t}/expenses`).on('value', s => {
+            document.getElementById('expense-body').innerHTML = Object.values(s.val() || {}).map(e => `<tr><td>${t}</td><td>${e.name}</td><td style="color:red">₵${e.amount}</td></tr>`).join('');
         });
     }
 
-    function addItem() {
-        const n = document.getElementById('st-name').value, c = document.getElementById('st-cat').value;
-        const p = parseFloat(document.getElementById('st-price').value), q = parseInt(document.getElementById('st-qty').value);
-        if(n && p) { 
-            const newItem = { id: Date.now(), name: n, category: c || "General", price: p, stock: q };
-            db.ref(dbPath + '/inventory').transaction((inv) => {
-                if (!inv) inv = [];
-                inv.push(newItem);
-                return inv;
-            });
-        }
+    function addPurchase() {
+        const i = document.getElementById('pur-item').value, s = document.getElementById('pur-supplier').value, a = document.getElementById('pur-amt').value, t = new Date().toISOString().split('T')[0];
+        if(i && a) db.ref(`reports/${bizId}/${t}/purchases`).push({ item:i, supplier:s, amount:a });
     }
 
-    function showPage(id, btn) {
-        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    function renderInventory() {
-        document.getElementById('stock-body').innerHTML = inventory.map(i => `<tr><td>${i.name}</td><td>${i.category}</td><td>₵${i.price}</td><td>${i.stock}</td><td><button onclick="deleteItem(${i.id})" style="border:none;background:none;cursor:pointer">🗑️</button></td></tr>`).join('');
-    }
-    
-    function deleteItem(id) { 
-        if(confirm("Delete?")) { 
-            db.ref(dbPath + '/inventory').transaction((inv) => {
-                if (inv) return inv.filter(i => i.id !== id);
-                return inv;
-            });
-        } 
-    }
-
-    function renderStaff() { document.getElementById('staff-body').innerHTML = staffList.map(s => `<tr><td>${s.name}</td><td>${s.role}</td><td>Active</td></tr>`).join(''); }
-
-    function addStaffMember() {
-        const n = document.getElementById('staff-name-in').value, p = document.getElementById('staff-pin-in').value;
-        if(n && p) { 
-            const newStaff = { name: n, pin: p, role: 'staff' };
-            db.ref(dbPath + '/staffList').transaction((list) => {
-                if (!list) list = [];
-                list.push(newStaff);
-                return list;
-            });
-        }
+    function loadPurchases() {
+        const t = new Date().toISOString().split('T')[0];
+        db.ref(`reports/${bizId}/${t}/purchases`).on('value', s => {
+            document.getElementById('purchase-body').innerHTML = Object.values(s.val() || {}).map(p => `<tr><td>${t}</td><td>${p.item}</td><td>${p.supplier}</td><td style="color:red">₵${p.amount}</td></tr>`).join('');
+        });
     }
 
     function saveDiscrepancy() {
-        const amt = document.getElementById('disc-amount').value;
-        const today = new Date().toISOString().split('T')[0];
-        db.ref(`reports/${bizId}/${today}/discrepancies`).push({ time: new Date().toLocaleTimeString(), staff: currentUser.name, type: document.getElementById('disc-type').value, amount: amt, note: document.getElementById('disc-note').value });
-        alert("Logged");
+        const t = document.getElementById('disc-type').value, a = document.getElementById('disc-amount').value, n = document.getElementById('disc-note').value, day = new Date().toISOString().split('T')[0];
+        if(a) { db.ref(`reports/${bizId}/${day}/discrepancy`).push({ type:t, amount:a, note:n, staff:currentUser.name }); alert("Logged"); }
+    }
+
+    function saveNewBusiness() {
+        const id = document.getElementById('reg-name').value, pin = document.getElementById('reg-pin').value, file = document.getElementById('reg-logo-file').files[0];
+        if(!id || !pin) return;
+        const fin = (logo) => {
+            db.ref('registry/'+id).set({logo});
+            db.ref('shops/'+id).set({ staffList:[{name:"Admin", pin, role:"admin"}], inventory:[] });
+            location.reload();
+        };
+        if(file) { const r = new FileReader(); r.onloadend = () => fin(r.result); r.readAsDataURL(file); } else fin("");
+    }
+
+    function deleteCurrentBusiness() {
+        if(confirm("Delete " + bizId + "?") && prompt("Type name to confirm") === bizId) {
+            db.ref('registry/'+bizId).remove(); db.ref('shops/'+bizId).remove(); db.ref('reports/'+bizId).remove(); location.reload();
+        }
+    }
+
+    function exportInventoryToExcel() {
+        const ws = XLSX.utils.json_to_sheet(inventory);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+        XLSX.writeFile(wb, `${bizId}_stock.xlsx`);
+    }
+
+    function importInventoryFromExcel(e) {
+        const f = e.target.files[0], r = new FileReader();
+        r.onload = (ev) => {
+            const data = new Uint8Array(ev.target.result), wb = XLSX.read(data, {type:'array'}), json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            inventory = json.map(x => ({id: x.id || Date.now()+Math.random(), name:x.name, category:x.category||"General", costPrice:x.costPrice||0, price:x.price, stock:x.stock}));
+            db.ref(dbPath+'/inventory').set(inventory);
+        };
+        r.readAsArrayBuffer(f);
     }
 
     function exportFullHistoryExcel() {
         db.ref(`reports/${bizId}`).once('value', s => {
-            const allData = s.val() || {};
-            const rows = [];
-            Object.keys(allData).forEach(date => {
-                const daySales = allData[date].sales || {};
-                Object.values(daySales).forEach(sale => {
-                    sale.itemDetails.forEach(item => {
-                        rows.push({ "Date": date, "Staff": sale.staff, "Category": item.category, "Product": item.name, "Price": item.price });
-                    });
-                });
-            });
-            const ws = XLSX.utils.json_to_sheet(rows), wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "SalesHistory");
-            XLSX.writeFile(wb, `${bizId}_Audit.xlsx`);
+            const data = s.val() || {}, rows = [];
+            Object.keys(data).forEach(d => Object.values(data[d].sales || {}).forEach(v => rows.push({Date:d, Staff:v.staff, Total:v.total})));
+            XLSX.writeFile(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(rows), "Audit.xlsx");
         });
     }
+
+    function manualBackup() {
+        localStorage.setItem(`pos_bk_${bizId}`, JSON.stringify({inventory, staffList}));
+        document.getElementById('backup-toast').style.display='block';
+        setTimeout(()=> document.getElementById('backup-toast').style.display='none', 2000);
+    }
+    // ... all your other existing code ...
+
+    // --- PASTE STEP 3 HERE ---
+    let monthChart = null; 
+
+    function loadMonthlyReports() {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        
+        db.ref(`reports/${bizId}`).once('value', s => {
+            const data = s.val() || {};
+            let mRev = 0, mExp = 0, mProf = 0;
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+            const dataset = Array(daysInMonth).fill(0);
+
+            Object.keys(data).forEach(dateStr => {
+                const d = new Date(dateStr);
+                if(d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+                    const dayNum = d.getDate();
+                    let dG = 0, dP = 0, dE = 0;
+                    Object.values(data[dateStr].sales || {}).forEach(s => { dG += parseFloat(s.total); dP += parseFloat(s.profit || 0); });
+                    Object.values(data[dateStr].expenses || {}).forEach(e => dE += parseFloat(e.amount));
+                    Object.values(data[dateStr].purchases || {}).forEach(p => dE += parseFloat(p.amount));
+                    mRev += dG; mProf += dP; mExp += dE;
+                    dataset[dayNum - 1] = dG;
+                }
+            });
+
+            document.getElementById('m-stat-rev').innerText = "₵" + mRev.toFixed(2);
+            document.getElementById('m-stat-profit').innerText = "₵" + mProf.toFixed(2);
+            document.getElementById('m-stat-exp').innerText = "₵" + mExp.toFixed(2);
+
+            if(monthChart) monthChart.destroy();
+            const ctx = document.getElementById('monthChart').getContext('2d');
+            monthChart = new Chart(ctx, {
+                type: 'bar',
+                data: { 
+                    labels: labels, 
+                    datasets: [{ label: 'Sales', data: dataset, backgroundColor: '#b8860b', borderRadius: 4, barThickness: 8 }] 
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { display: false }, grid: { display: false } } }
+                }
+            });
+        });
+    }
+
+    function generateDayReport() {
+        const day = new Date().toISOString().split('T')[0];
+        db.ref(`reports/${bizId}/${day}`).once('value', s => {
+            const data = s.val() || {};
+            let salesTotal = 0, expTotal = 0, discTotal = 0;
+            Object.values(data.sales || {}).forEach(v => salesTotal += parseFloat(v.total));
+            Object.values(data.expenses || {}).forEach(v => expTotal += parseFloat(v.amount));
+            Object.values(data.purchases || {}).forEach(v => expTotal += parseFloat(v.amount));
+            Object.values(data.discrepancy || {}).forEach(v => discTotal += (v.type === 'Shortage' ? -parseFloat(v.amount) : parseFloat(v.amount)));
+            
+            const msg = `📊 *DAY REPORT: ${bizId}*%0A📅 Date: ${day}%0A💰 Sales: ₵${salesTotal.toFixed(2)}%0A💸 Exp: ₵${expTotal.toFixed(2)}%0A⚖️ Adj: ₵${discTotal.toFixed(2)}%0A✅ *CASH: ₵${(salesTotal - expTotal + discTotal).toFixed(2)}*`;
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
+        });
+    }
+    // --- END OF PASTE ---
+// Function to handle the Cash/Momo Switch
+function setPayment(type) {
+    const cashBtn = document.getElementById('btn-cash');
+    const momoBtn = document.getElementById('btn-momo');
+    const refBox = document.getElementById('momo-ref-box');
+    document.getElementById('selected-payment').value = type;
+    if (type === 'Cash') {
+        cashBtn.style.borderColor = '#b8860b'; cashBtn.style.background = '#fefce8';
+        momoBtn.style.borderColor = '#e2e8f0'; momoBtn.style.background = 'white';
+        refBox.style.display = 'none';
+    } else {
+        momoBtn.style.borderColor = '#b8860b'; momoBtn.style.background = '#fefce8';
+        cashBtn.style.borderColor = '#e2e8f0'; cashBtn.style.background = 'white';
+        refBox.style.display = 'block';
+    }
+}
+
+// Function to load Month Stats and Chart
+function loadMonthlyReports() {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    db.ref(`reports/${bizId}`).once('value', s => {
+        const data = s.val() || {};
+        let mRev = 0, mExp = 0, mProf = 0;
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+        const dataset = Array(daysInMonth).fill(0);
+
+        Object.keys(data).forEach(dateStr => {
+            const d = new Date(dateStr);
+            if(d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+                const dayNum = d.getDate();
+                let dG = 0, dP = 0, dE = 0;
+                Object.values(data[dateStr].sales || {}).forEach(s => { dG += parseFloat(s.total); dP += parseFloat(s.profit || 0); });
+                Object.values(data[dateStr].expenses || {}).forEach(e => dE += parseFloat(e.amount));
+                Object.values(data[dateStr].purchases || {}).forEach(p => dE += parseFloat(p.amount));
+                mRev += dG; mProf += dP; mExp += dE;
+                dataset[dayNum - 1] = dG;
+            }
+        });
+
+        document.getElementById('m-stat-rev').innerText = "₵" + mRev.toFixed(2);
+        document.getElementById('m-stat-profit').innerText = "₵" + mProf.toFixed(2);
+        document.getElementById('m-stat-exp').innerText = "₵" + mExp.toFixed(2);
+
+        if(window.monthChartInstance) window.monthChartInstance.destroy();
+        const ctx = document.getElementById('monthChart').getContext('2d');
+        window.monthChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Sales', data: dataset, backgroundColor: '#b8860b', borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
+        });
+    });
+}
+
+// Function for WhatsApp Day Summary
+function generateDayReport() {
+    const day = new Date().toISOString().split('T')[0];
+    db.ref(`reports/${bizId}/${day}`).once('value', s => {
+        const data = s.val() || {};
+        let salesTotal = 0, expTotal = 0;
+        Object.values(data.sales || {}).forEach(v => salesTotal += parseFloat(v.total));
+        Object.values(data.expenses || {}).forEach(v => expTotal += parseFloat(v.amount));
+        Object.values(data.purchases || {}).forEach(v => expTotal += parseFloat(v.amount));
+        
+        const msg = `📊 *DAY REPORT: ${bizId}*%0A📅 Date: ${day}%0A💰 Sales: ₵${salesTotal.toFixed(2)}%0A💸 Exp: ₵${expTotal.toFixed(2)}%0A✅ *NET CASH: ₵${(salesTotal - expTotal).toFixed(2)}*`;
+        window.open(`https://wa.me/?text=${msg}`, '_blank');
+    });
+}
 </script>
 </body>
 </html>
