@@ -100,6 +100,9 @@
         
         <nav style="flex:1">
             <button onclick="showPage('sales-page', this)" class="nav-btn active">Terminal (POS)</button>
+            <button id="nav-sup-report" onclick="sendSupervisorReport()" class="nav-btn" style="color: var(--green); display:none;">
+    📱 Send My Day Report
+</button>
             <button onclick="showPage('purchase-page', this); loadPurchases();" class="nav-btn">Purchase Records</button>
             <button onclick="showPage('discrepancy-page', this)" class="nav-btn">Cash Log / Issues</button>
             <div id="admin-section" style="display:none;">
@@ -268,7 +271,12 @@
         <div id="purchase-page" class="page-content">
             <h2>Stock Purchase Records</h2>
             <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
-                <input type="text" id="pur-item" placeholder="Item Name / Batch" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+               <div style="position: relative; width: 100%;">
+    <input type="text" id="pur-item" placeholder="🔍 Search Item to Add Stock..." 
+           oninput="doPurchaseSearch(this.value)" 
+           style="width:100%; padding:10px; margin-bottom:5px; border-radius:8px; border:1px solid var(--border);">
+   
+</div>
                 <input type="text" id="pur-supplier" placeholder="Supplier Name" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
                 <input type="number" id="pur-amt" placeholder="Total Cost ₵" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
                 <button onclick="addPurchase()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:bold;">Log Purchase</button>
@@ -375,13 +383,28 @@
         document.getElementById('side-biz-name').innerText = bizId;
         document.getElementById('side-user').innerText = "Session: " + currentUser.name;
         
-        const isAdmin = currentUser.role === 'admin', isSupervisor = currentUser.role === 'supervisor';
-        document.getElementById('admin-section').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
-        document.getElementById('nav-inventory').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
-        document.getElementById('nav-expense').style.display = isAdmin ? 'block' : 'none';
-        document.getElementById('nav-staff').style.display = isAdmin ? 'block' : 'none';
-        document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none';
-        document.getElementById('danger-zone-admin').style.display = isAdmin ? 'block' : 'none';
+      const isAdmin = currentUser.role === 'admin';
+const isSupervisor = currentUser.role === 'supervisor';
+// Give access to Supervisor and Admin
+document.getElementById('nav-sup-report').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
+
+// 1. Show the general admin container for both
+document.getElementById('admin-section').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
+
+// 2. RESTRICT Inventory and Monthly Analytics ONLY to Admin
+document.getElementById('nav-inventory').style.display = isAdmin ? 'block' : 'none';
+
+// Find the button that opens monthly-page and hide it from supervisors
+// If you have a specific ID for the monthly button, use it here:
+const monthlyBtn = document.querySelector("button[onclick*='monthly-page']");
+if (monthlyBtn) {
+    monthlyBtn.style.display = isAdmin ? 'block' : 'none';
+}
+
+// 3. Keep other admin restrictions
+document.getElementById('nav-expense').style.display = isAdmin ? 'block' : 'none';
+document.getElementById('nav-staff').style.display = isAdmin ? 'block' : 'none';
+document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none';
 
         const logo = registry[bizId]?.logo;
         if(logo) document.getElementById('side-logo').innerHTML = `<img src="${logo}" style="width:50px; height:50px; border-radius:8px; object-fit:cover;">`;
@@ -539,11 +562,43 @@
         });
     }
 
-    function addPurchase() {
-        const i = document.getElementById('pur-item').value, s = document.getElementById('pur-supplier').value, a = document.getElementById('pur-amt').value, t = new Date().toISOString().split('T')[0];
-        if(i && a) db.ref(`reports/${bizId}/${t}/purchases`).push({ item:i, supplier:s, amount:a });
+   function addPurchase() {
+    const itemName = document.getElementById('pur-item').value;
+    const supplier = document.getElementById('pur-supplier').value;
+    const totalAmount = parseFloat(document.getElementById('pur-amt').value);
+    
+    // We ask for the quantity to add to the inventory stock
+    const qtyToAdd = parseInt(prompt("How many units are you adding to stock?", "0"));
+
+    if (!itemName || isNaN(totalAmount) || isNaN(qtyToAdd)) {
+        return alert("Please fill Item Name, Total Cost, and enter a valid quantity in the prompt.");
     }
 
+    // 1. Find item and update stock
+    const itemIdx = inventory.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
+    if (itemIdx > -1) {
+        inventory[itemIdx].stock = (parseInt(inventory[itemIdx].stock) || 0) + qtyToAdd;
+        db.ref(dbPath + '/inventory').set(inventory);
+    } else {
+        alert("Item not found in inventory. Record saved, but stock not updated.");
+    }
+
+    // 2. Save to purchase records
+    const purchaseData = {
+        date: new Date().toISOString().split('T')[0],
+        item: itemName,
+        supplier: supplier,
+        amount: totalAmount,
+        staff: currentUser.name
+    };
+
+    db.ref(dbPath + '/purchases').push(purchaseData).then(() => {
+        alert("Purchase Logged & Stock Updated!");
+        document.getElementById('pur-item').value = "";
+        document.getElementById('pur-amt').value = "";
+        document.getElementById('pur-supplier').value = "";
+    });
+}
     function loadPurchases() {
         const t = new Date().toISOString().split('T')[0];
         db.ref(`reports/${bizId}/${t}/purchases`).on('value', s => {
@@ -665,7 +720,8 @@
             Object.values(data.discrepancy || {}).forEach(v => discTotal += (v.type === 'Shortage' ? -parseFloat(v.amount) : parseFloat(v.amount)));
             
             const msg = `📊 *DAY REPORT: ${bizId}*%0A📅 Date: ${day}%0A💰 Sales: ₵${salesTotal.toFixed(2)}%0A💸 Exp: ₵${expTotal.toFixed(2)}%0A⚖️ Adj: ₵${discTotal.toFixed(2)}%0A✅ *CASH: ₵${(salesTotal - expTotal + discTotal).toFixed(2)}*`;
-            window.open(`https://wa.me/?text=${msg}`, '_blank');
+            // Replace 233... with your actual number (e.g., 233244123456)
+window.open(`https://wa.me/233546953255?text=${message}`);
         });
     }
     // --- END OF PASTE ---
@@ -738,6 +794,76 @@ function generateDayReport() {
         const msg = `📊 *DAY REPORT: ${bizId}*%0A📅 Date: ${day}%0A💰 Sales: ₵${salesTotal.toFixed(2)}%0A💸 Exp: ₵${expTotal.toFixed(2)}%0A✅ *NET CASH: ₵${(salesTotal - expTotal).toFixed(2)}*`;
         window.open(`https://wa.me/?text=${msg}`, '_blank');
     });
+}
+// Supervisor Day Report Logic
+function sendSupervisorReport() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Fetch reports for today from Firebase
+    db.ref(`reports/${bizId}/${today}`).once('value', s => {
+        const data = s.val() || {};
+        let mySales = 0;
+        let myExpenses = 0;
+
+        // Filter Sales: Only count sales made by the current user
+        if (data.sales) {
+            Object.values(data.sales).forEach(sale => {
+                if (sale.staff === currentUser.name) {
+                    mySales += parseFloat(sale.total || 0);
+                }
+            });
+        }
+
+        // Filter Expenses: Only count expenses logged by the current user
+        if (data.expenses) {
+            Object.values(data.expenses).forEach(exp => {
+                // If your system logs staff names for expenses, check it here
+                if (exp.staff === currentUser.name || !exp.staff) { 
+                    myExpenses += parseFloat(exp.amount || 0);
+                }
+            });
+        }
+
+        const netCash = mySales - myExpenses;
+
+        // Create WhatsApp Message Format
+        const message = `📊 *SUPERVISOR DAY REPORT*%0A` +
+                        `👤 *Staff:* ${currentUser.name}%0A` +
+                        `📅 *Date:* ${today}%0A` +
+                        `────────────────%0A` +
+                        `💰 *My Sales:* ₵${mySales.toFixed(2)}%0A` +
+                        `💸 *My Expenses:* ₵${myExpenses.toFixed(2)}%0A` +
+                        `📉 *Net Cash:* ₵${netCash.toFixed(2)}%0A` +
+                        `────────────────%0A` +
+                        `*Branch:* ${bizId}`;
+
+        // Open WhatsApp with the pre-filled message
+        window.open(`https://wa.me/?text=${message}`);
+    });
+}
+// Search function for Purchases
+function doPurchaseSearch(val) {
+    const list = document.getElementById('pur-autocomplete-list');
+    if (!val) {
+        list.style.display = 'none';
+        return;
+    }
+    const matches = inventory.filter(i => i.name.toLowerCase().includes(val.toLowerCase()));
+    if (matches.length > 0) {
+        list.innerHTML = matches.map(m => `
+            <div onclick="selectPurItem('${m.name}')" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 13px; color: black;">
+                <b>${m.name}</b> <small style="color:#64748b;">(Current Stock: ${m.stock})</small>
+            </div>
+        `).join('');
+        list.style.display = 'block';
+    } else {
+        list.style.display = 'none';
+    }
+}
+
+function selectPurItem(name) {
+    document.getElementById('pur-item').value = name;
+    document.getElementById('pur-autocomplete-list').style.display = 'none';
 }
 </script>
 </body>
