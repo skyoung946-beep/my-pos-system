@@ -265,7 +265,17 @@
                 </select>
                 <button onclick="addStaffMember()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px;">Authorize User</button>
             </div>
-            <table><thead><tr><th>Name</th><th>PIN</th><th>Role</th><th>Action</th></tr></thead><tbody id="staff-body"></tbody></table>
+            <table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>PIN</th>
+            <th>Role</th>
+            <th>Manage</th> <th>Action</th>
+        </tr>
+    </thead>
+    <tbody id="staff-body"></tbody>
+</table>
         </div>
 
         <div id="purchase-page" class="page-content">
@@ -547,8 +557,28 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
     }
 
     function renderStaff() {
-        document.getElementById('staff-body').innerHTML = staffList.map((s, i) => `<tr><td>${s.name}</td><td>****</td><td>${s.role}</td><td><button onclick="staffList.splice(${i},1); db.ref(dbPath+'/staffList').set(staffList)">X</button></td></tr>`).join('');
-    }
+    // This updates the table body with rows including the new "Change PIN" button
+    document.getElementById('staff-body').innerHTML = staffList.map((u, index) => {
+        // Only show 'Del' button if it's NOT the current admin to prevent accidental lockout
+        const deleteBtn = (u.role !== 'admin') ? `<button onclick="deleteStaff(${index})" style="color:var(--red); border:none; background:none; cursor:pointer; font-weight:bold;">Del</button>` : '';
+        
+        return `
+        <tr>
+            <td>
+                <b>${u.name}</b> 
+                ${u.name === currentUser.name ? '<small style="color:var(--accent); font-weight:bold;">(YOU)</small>' : ''}
+            </td>
+            <td style="letter-spacing:3px; font-weight:bold; color:#94a3b8;">****</td>
+            <td><span style="text-transform:uppercase; font-size:10px; background:#f1f5f9; padding:3px 8px; border-radius:4px; font-weight:700;">${u.role}</span></td>
+            <td>
+                <button onclick="changeStaffPin(${index})" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:bold;">
+                    🔑 New PIN
+                </button>
+            </td>
+            <td style="text-align:center;">${deleteBtn}</td>
+        </tr>`;
+    }).join('');
+}
 
     function addExpense() {
         const n = document.getElementById('exp-name').value, a = document.getElementById('exp-amt').value, t = new Date().toISOString().split('T')[0];
@@ -864,6 +894,29 @@ function doPurchaseSearch(val) {
 function selectPurItem(name) {
     document.getElementById('pur-item').value = name;
     document.getElementById('pur-autocomplete-list').style.display = 'none';
+}
+function changeStaffPin(index) {
+    const newPin = prompt(`Enter new 4-digit PIN for ${staffList[index].name}:`);
+    
+    // Validation: Must be 4 digits
+    if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+        return alert("Error: PIN must be exactly 4 digits.");
+    }
+
+    // Update the local list
+    staffList[index].pin = newPin;
+
+    // Save to Firebase
+    db.ref(dbPath + '/staffList').set(staffList).then(() => {
+        alert("Success: PIN updated for " + staffList[index].name);
+        
+        // If the Admin changed their OWN pin, we update the session too
+        if (staffList[index].name === currentUser.name) {
+            currentUser.pin = newPin;
+        }
+        
+        renderStaff();
+    });
 }
 </script>
 </body>
