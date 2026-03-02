@@ -110,6 +110,9 @@
                 <button onclick="showPage('expense-page', this)" id="nav-expense" class="nav-btn">Expense Tracker</button>
                 <button onclick="showPage('staff-page', this)" id="nav-staff" class="nav-btn">Staff Access</button>
                 <button onclick="showPage('report-page', this); loadReports();" id="nav-reports" class="nav-btn">Annual Analytics</button>
+                <button id="nav-daily-audit" onclick="showPage('daily-audit-page', this)" class="nav-btn">
+    📅 Daily Audit
+</button>
             </div>
         </nav>
         <button onclick="showPage('monthly-page', this); loadMonthlyReports();" class="nav-btn">Monthly Analytics</button>
@@ -211,6 +214,54 @@
                 <tbody id="report-body"></tbody>
             </table>
         </div>
+        <div id="daily-audit-page" class="page-content" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>Daily Sales Audit</h2>
+        <button onclick="downloadSpecificDayExcel()" style="padding:10px 20px; background:var(--green); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
+            📥 Download Day Excel
+        </button>
+    </div>
+
+    <div style="background:white; padding:20px; border-radius:12px; border:1px solid var(--border); margin-bottom:20px; display:flex; gap:15px; align-items:center;">
+        <div style="flex:1;">
+            <label style="font-size:11px; font-weight:bold; color:#64748b; display:block; margin-bottom:5px;">SELECT DATE TO AUDIT</label>
+            <input type="date" id="daily-audit-date" onchange="fetchDailyAudit()" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+        </div>
+        <button onclick="fetchDailyAudit()" style="padding:12px 25px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:18px;">🔎 View Audit</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:15px; margin-bottom:20px;">
+        <div class="stat-card">
+            <small>Total Sales</small>
+            <div id="da-sales" style="font-size:20px; font-weight:bold; color:var(--green)">₵0.00</div>
+        </div>
+        <div class="stat-card">
+            <small>Total Profit</small>
+            <div id="da-profit" style="font-size:20px; font-weight:bold; color:var(--accent)">₵0.00</div>
+        </div>
+        <div class="stat-card">
+            <small>Total Expenses</small>
+            <div id="da-exp" style="font-size:20px; font-weight:bold; color:var(--red)">₵0.00</div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="daily-audit-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Staff</th>
+                    <th>Items Sold</th>
+                    <th>Total (₵)</th>
+                    <th>Profit (₵)</th>
+                </tr>
+            </thead>
+            <tbody id="daily-audit-body">
+                <tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">Select a date to see the audit trail</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
         <div id="expense-page" class="page-content">
             <h2>Expense Tracker</h2>
@@ -409,6 +460,8 @@ document.getElementById('nav-inventory').style.display = isAdmin ? 'block' : 'no
 const monthlyBtn = document.querySelector("button[onclick*='monthly-page']");
 if (monthlyBtn) {
     monthlyBtn.style.display = isAdmin ? 'block' : 'none';
+    // Add this line here
+document.getElementById('nav-daily-audit').style.display = isAdmin ? 'block' : 'none';
 }
 
 // 3. Keep other admin restrictions
@@ -441,11 +494,15 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
     }
 
     function showPage(pageId, btn) {
-        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-    }
+    // Hide all pages
+    document.querySelectorAll('.page-content').forEach(p => p.style.display = 'none');
+    // Show the selected page
+    document.getElementById(pageId).style.display = 'block';
+
+    // Update active button styling
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+}
 
     function addItem() {
         const name = document.getElementById('st-name').value, cat = document.getElementById('st-cat').value || "General", cost = document.getElementById('st-cost').value || 0, price = document.getElementById('st-price').value, qty = document.getElementById('st-qty').value;
@@ -917,6 +974,49 @@ function changeStaffPin(index) {
         
         renderStaff();
     });
+}
+function fetchDailyAudit() {
+    const date = document.getElementById('daily-audit-date').value;
+    if (!date) return;
+
+    db.ref(`reports/${bizId}/${date}`).once('value', s => {
+        const data = s.val() || {};
+        let tSales = 0, tProf = 0, tExp = 0;
+        let rows = "";
+
+        if (data.sales) {
+            Object.values(data.sales).forEach(sale => {
+                tSales += parseFloat(sale.total || 0);
+                tProf += parseFloat(sale.profit || 0);
+                const items = sale.itemDetails ? sale.itemDetails.map(i => `${i.name} (${i.qty})`).join(", ") : "N/A";
+                
+                rows += `<tr>
+                    <td>${sale.time || 'N/A'}</td>
+                    <td>${sale.staff || 'N/A'}</td>
+                    <td style="font-size:11px;">${items}</td>
+                    <td>₵${parseFloat(sale.total).toFixed(2)}</td>
+                    <td style="color:var(--accent)">₵${parseFloat(sale.profit || 0).toFixed(2)}</td>
+                </tr>`;
+            });
+        }
+
+        if (data.expenses) Object.values(data.expenses).forEach(e => tExp += parseFloat(e.amount || 0));
+        if (data.purchases) Object.values(data.purchases).forEach(p => tExp += parseFloat(p.amount || 0));
+
+        document.getElementById('da-sales').innerText = "₵" + tSales.toFixed(2);
+        document.getElementById('da-profit').innerText = "₵" + tProf.toFixed(2);
+        document.getElementById('da-exp').innerText = "₵" + tExp.toFixed(2);
+        document.getElementById('daily-audit-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;">No records found for this date.</td></tr>';
+    });
+}
+
+function downloadSpecificDayExcel() {
+    const date = document.getElementById('daily-audit-date').value;
+    if (!date) return alert("Please select a date first!");
+    
+    const table = document.getElementById("daily-audit-table");
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Daily Audit" });
+    XLSX.writeFile(wb, `Audit_${bizId}_${date}.xlsx`);
 }
 </script>
 </body>
