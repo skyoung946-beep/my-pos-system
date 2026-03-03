@@ -345,11 +345,21 @@
 </table>
         </div>
 
-    <div id="purchase-page" class="page-content">
-    <div style="background:var(--primary); color:white; padding:20px; border-radius:12px; margin-bottom:20px;">
-        <h2 style="margin:0;">📦 Stock Procurement</h2>
-        <p style="margin:5px 0 0 0; opacity:0.8; font-size:13px;">Log new stock arrivals to update inventory automatically</p>
+  <div id="purchase-page" class="page-content" style="display:none;">
+    <div style="background:var(--primary); color:white; padding:20px; border-radius:12px; margin-bottom:20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin:0;">📦 Stock Procurement</h2>
+            <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+                <input type="date" id="pur-search-date" style="padding:5px 10px; border-radius:5px; border:none; color:black;">
+                <button onclick="loadPurchasesByDate()" style="background:#fbbf24; color:black; border:none; padding:6px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">🔍 View Date</button>
+            </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 10px; text-align: right;">
+            <div id="pur-date-label" style="font-size: 11px; text-transform: uppercase; opacity: 0.9;">Today's Total</div>
+            <div id="pur-day-total" style="font-size: 24px; font-weight: bold;">0.00</div>
+        </div>
     </div>
+    ...
 
     <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
         <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap: 10px; align-items: end;">
@@ -761,12 +771,14 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
         document.getElementById('pur-amt').value = "";
     });
 }
-    function loadPurchases() {
-        const t = new Date().toISOString().split('T')[0];
-        db.ref(`reports/${bizId}/${t}/purchases`).on('value', s => {
-            document.getElementById('purchase-body').innerHTML = Object.values(s.val() || {}).map(p => `<tr><td>${t}</td><td>${p.item}</td><td>${p.supplier}</td><td style="color:red">₵${p.amount}</td></tr>`).join('');
-        });
-    }
+   function loadPurchases() {
+    const today = new Date().toISOString().split('T')[0];
+    db.ref(`reports/${bizId}/${today}/purchases`).on('value', snapshot => {
+        const data = snapshot.val() || {};
+        renderPurchaseTable(data); // Your existing table function
+        updatePurchaseTotal(data); // THE NEW ADDITION
+    });
+}
 
     function saveDiscrepancy() {
         const t = document.getElementById('disc-type').value, a = document.getElementById('disc-amount').value, n = document.getElementById('disc-note').value, day = new Date().toISOString().split('T')[0];
@@ -1246,6 +1258,57 @@ function addPurchase() {
         loadPurchases(); // Refresh the table view
     });
 }
+function updatePurchaseTotal(records) {
+    let total = 0;
+    // Loop through the purchase objects and sum the 'amount'
+    Object.values(records).forEach(item => {
+        total += parseFloat(item.amount) || 0;
+    });
+    
+    // Update the UI
+    const totalEl = document.getElementById('pur-day-total');
+    if(totalEl) {
+        totalEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+}
+// Function to load purchases for a specific picked date
+function loadPurchasesByDate() {
+    const pickedDate = document.getElementById('pur-search-date').value;
+    if (!pickedDate) return alert("Please select a date first");
+
+    // Update the UI Label
+    document.getElementById('pur-date-label').innerText = "Total for " + pickedDate;
+
+    // Fetch from Firebase for that specific date
+    db.ref(`reports/${bizId}/${pickedDate}/purchases`).once('value', snapshot => {
+        const data = snapshot.val() || {};
+        
+        // 1. Clear current table
+        const tbody = document.getElementById('purchase-body');
+        tbody.innerHTML = "";
+
+        // 2. Render the rows for that date
+        let dayTotal = 0;
+        Object.entries(data).forEach(([key, val]) => {
+            dayTotal += parseFloat(val.amount) || 0;
+            const row = `<tr>
+                <td>${val.time}</td>
+                <td>${val.item}</td>
+                <td>${val.unitPrice}</td>
+                <td>${val.qty}</td>
+                <td>${val.amount}</td>
+                <td>${val.supplier}</td>
+            </tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+
+        // 3. Update the Total Display
+        document.getElementById('pur-day-total').innerText = dayTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+    });
+}
+
+// Set the date picker to Today by default on startup
+document.getElementById('pur-search-date').value = new Date().toISOString().split('T')[0];
 </script>
 </body>
 </html>
