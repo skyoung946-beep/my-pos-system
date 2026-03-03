@@ -3,6 +3,7 @@
 <head>
     <title>Enterprise Cloud POS - Gold V3</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -89,7 +90,9 @@
     <h2 id="pin-biz-name" style="color:var(--primary)"></h2>
     <div style="font-size:35px; letter-spacing:15px; margin-bottom:25px; color:var(--accent)" id="pin-dots">****</div>
     <div id="numpad" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 15px;"></div>
-    <button onclick="location.reload()" style="margin-top:30px; background:none; border:none; color:#64748b; cursor:pointer;">← Back to Portal</button>
+    <button onclick="handleLogout()" style="margin-top:30px; background:none; border:none; color:#64748b; cursor:pointer; font-weight:bold;">
+    ← Back to Branch Selection
+</button>
 </div>
 
 <div id="main-wrapper">
@@ -103,7 +106,7 @@
             <button id="nav-sup-report" onclick="sendSupervisorReport()" class="nav-btn" style="color: var(--green); display:none;">
     📱 Send My Day Report
 </button>
-            <button onclick="showPage('purchase-page', this); loadPurchases();" class="nav-btn">Purchase Records</button>
+        
             <button onclick="showPage('discrepancy-page', this)" class="nav-btn">Cash Log / Issues</button>
             <div id="admin-section" style="display:none;">
                 <button onclick="showPage('stock-page', this)" id="nav-inventory" class="nav-btn">Inventory & Category</button>
@@ -116,7 +119,11 @@
             </div>
         </nav>
         <button onclick="showPage('monthly-page', this); loadMonthlyReports();" class="nav-btn">Monthly Analytics</button>
-
+<div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
+    <button onclick="handleLogout()" class="nav-btn" style="color: var(--red); display: flex; align-items: center; gap: 10px; width: 100%;">
+        <span>🚪</span> Logout / Switch User
+    </button>
+</div>
 
     </div>
 
@@ -178,8 +185,14 @@
         <div style="height:160px;"><canvas id="monthChart"></canvas></div>
     </div>
 </div>
-        <div id="report-page" class="page-content">
-            <h2>Annual Performance</h2>
+       <div id="report-page" class="page-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0">Annual Performance</h2>
+        
+        <button onclick="downloadYearAudit()" style="padding:12px 20px; background:#059669; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:8px; shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <span>📊</span> Download Full Year Audit (Excel)
+        </button>
+    </div>
             <div style="display:flex; gap:15px; margin-bottom:20px;">
                 <div class="stat-card">
                     <div style="font-size:12px; color:#64748b">Year Revenue</div>
@@ -1018,6 +1031,103 @@ function downloadSpecificDayExcel() {
     const wb = XLSX.utils.table_to_book(table, { sheet: "Daily Audit" });
     XLSX.writeFile(wb, `Audit_${bizId}_${date}.xlsx`);
 }
+function downloadYearAudit() {
+    // Show a small loading hint if you like
+    console.log("Generating Year Audit...");
+
+    db.ref(`reports/${bizId}`).once('value', s => {
+        const allData = s.val() || {};
+        const summaryRows = [];
+
+        // Sort all available dates from oldest to newest
+        const sortedDates = Object.keys(allData).sort();
+
+        if (sortedDates.length === 0) {
+            return alert("No data found to export for this year.");
+        }
+
+        sortedDates.forEach(date => {
+            let dSales = 0;
+            let dProf = 0;
+            let dExp = 0;
+            let dPur = 0;
+
+            const dayData = allData[date];
+
+            // 1. Sum Sales & Profit
+            if (dayData.sales) {
+                Object.values(dayData.sales).forEach(s => {
+                    dSales += parseFloat(s.total || 0);
+                    dProf += parseFloat(s.profit || 0);
+                });
+            }
+
+            // 2. Sum General Expenses
+            if (dayData.expenses) {
+                Object.values(dayData.expenses).forEach(e => {
+                    dExp += parseFloat(e.amount || 0);
+                });
+            }
+
+            // 3. Sum Purchases (Stock Inflow)
+            if (dayData.purchases) {
+                Object.values(dayData.purchases).forEach(p => {
+                    dPur += parseFloat(p.amount || 0);
+                });
+            }
+
+            // Add this day's row to our Excel data
+            summaryRows.push({
+                "Date": date,
+                "Gross Revenue (₵)": dSales.toFixed(2),
+                "Operating Expenses (₵)": dExp.toFixed(2),
+                "Stock Purchases (₵)": dPur.toFixed(2),
+                "Total Outflow (₵)": (dExp + dPur).toFixed(2),
+                "Net Cash Flow (₵)": (dSales - (dExp + dPur)).toFixed(2),
+                "Estimated Gross Profit (₵)": dProf.toFixed(2)
+            });
+        });
+
+        // Create the Excel Workbook
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(summaryRows);
+
+        // Set column widths so it looks professional
+        const wscols = [
+            {wch: 15}, {wch: 20}, {wch: 22}, {wch: 20}, {wch: 20}, {wch: 20}, {wch: 25}
+        ];
+        ws['!cols'] = wscols;
+
+        XLSX.utils.book_append_sheet(wb, ws, "Annual_Financial_Audit");
+        
+        // Trigger the download
+        XLSX.writeFile(wb, `Year_Audit_${bizId}_${new Date().getFullYear()}.xlsx`);
+    });
+}
+function handleLogout() {
+    // 1. Confirm with the user
+    if(!confirm("Are you sure you want to logout?")) return;
+
+    // 2. Reset the session data
+    currentUser = null;
+    typedPin = "";
+    bizId = "";
+    dbPath = "";
+
+    // 3. Reset the UI
+    document.getElementById('pin-dots').innerText = "****"; // Clear PIN display
+    document.getElementById('main-wrapper').style.display = 'none'; // Hide App
+    document.getElementById('login-overlay').style.display = 'none'; // Hide PIN Gate
+    document.getElementById('directory-overlay').style.display = 'flex'; // Show Portal
+    
+    // 4. Reset Navigation highlights
+    const btns = document.getElementsByClassName('nav-btn');
+    for (let b of btns) { b.classList.remove('active'); }
+    
+    // Optional: Refresh the page to ensure a clean state
+    // location.reload(); 
+}
 </script>
 </body>
 </html>
+
