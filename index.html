@@ -111,6 +111,9 @@
             <div id="admin-section" style="display:none;">
                 <button onclick="showPage('stock-page', this)" id="nav-inventory" class="nav-btn">Inventory & Category</button>
                 <button onclick="showPage('expense-page', this)" id="nav-expense" class="nav-btn">Expense Tracker</button>
+                <button onclick="showPage('purchase-page', this)" class="nav-btn">
+    <span>📦</span> Purchase Records
+</button>
                 <button onclick="showPage('staff-page', this)" id="nav-staff" class="nav-btn">Staff Access</button>
                 <button onclick="showPage('report-page', this); loadReports();" id="nav-reports" class="nav-btn">Annual Analytics</button>
                 <button id="nav-daily-audit" onclick="showPage('daily-audit-page', this)" class="nav-btn">
@@ -342,21 +345,55 @@
 </table>
         </div>
 
-        <div id="purchase-page" class="page-content">
-            <h2>Stock Purchase Records</h2>
-            <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
-               <div style="position: relative; width: 100%;">
-    <input type="text" id="pur-item" placeholder="🔍 Search Item to Add Stock..." 
-           oninput="doPurchaseSearch(this.value)" 
-           style="width:100%; padding:10px; margin-bottom:5px; border-radius:8px; border:1px solid var(--border);">
-   
-</div>
-                <input type="text" id="pur-supplier" placeholder="Supplier Name" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
-                <input type="number" id="pur-amt" placeholder="Total Cost ₵" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
-                <button onclick="addPurchase()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:bold;">Log Purchase</button>
+    <div id="purchase-page" class="page-content">
+    <div style="background:var(--primary); color:white; padding:20px; border-radius:12px; margin-bottom:20px;">
+        <h2 style="margin:0;">📦 Stock Procurement</h2>
+        <p style="margin:5px 0 0 0; opacity:0.8; font-size:13px;">Log new stock arrivals to update inventory automatically</p>
+    </div>
+
+    <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap: 10px; align-items: end;">
+            <div>
+                <label style="font-size:11px; font-weight:bold; color:#64748b;">ITEM NAME</label>
+                <input type="text" id="pur-item" placeholder="Search item..." oninput="doPurchaseSearch(this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+                <div id="pur-autocomplete-list" style="position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; display: none;"></div>
             </div>
-            <table id="purchase-table"><thead><tr><th>Date</th><th>Item</th><th>Supplier</th><th>Amount</th></tr></thead><tbody id="purchase-body"></tbody></table>
+            <div>
+                <label style="font-size:11px; font-weight:bold; color:#64748b;">UNIT PRICE</label>
+                <input type="number" id="pur-unit" oninput="calcPurTotal()" placeholder="0.00" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold; color:#64748b;">QTY</label>
+                <input type="number" id="pur-qty" oninput="calcPurTotal()" placeholder="0" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold; color:#64748b;">TOTAL AMOUNT</label>
+                <input type="number" id="pur-amt" readonly style="width:100%; padding:10px; border-radius:8px; border:1px solid #eee; background:#f1f5f9; font-weight:bold;">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold; color:#64748b;">SUPPLIER</label>
+                <input type="text" id="pur-supplier" placeholder="Wholesaler name" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);">
+            </div>
         </div>
+        <button onclick="addPurchase()" style="width:100%; margin-top:15px; padding:15px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">
+            📥 Save Purchase & Update Inventory
+        </button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Item</th>
+                <th>Unit Price</th>
+                <th>Quantity</th>
+                <th>Amount</th>
+                <th>Supplier</th>
+            </tr>
+        </thead>
+        <tbody id="purchase-body"></tbody>
+    </table>
+</div>
 
         <div id="discrepancy-page" class="page-content">
             <h2>Cash Log</h2>
@@ -507,14 +544,26 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
     }
 
     function showPage(pageId, btn) {
-    // Hide all pages
-    document.querySelectorAll('.page-content').forEach(p => p.style.display = 'none');
-    // Show the selected page
-    document.getElementById(pageId).style.display = 'block';
+    // 1. Hide all pages
+    const pages = document.getElementsByClassName('page-content');
+    for (let p of pages) {
+        p.style.display = 'none';
+        p.classList.remove('active');
+    }
 
-    // Update active button styling
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    if(btn) btn.classList.add('active');
+    // 2. Show the selected page
+    const target = document.getElementById(pageId);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+    }
+
+    // 3. Handle Sidebar UI Highlighting
+    const navBtns = document.getElementsByClassName('nav-btn');
+    for (let b of navBtns) {
+        b.classList.remove('active');
+    }
+    if (btn) btn.classList.add('active');
 }
 
     function addItem() {
@@ -664,39 +713,52 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
 
    function addPurchase() {
     const itemName = document.getElementById('pur-item').value;
-    const supplier = document.getElementById('pur-supplier').value;
-    const totalAmount = parseFloat(document.getElementById('pur-amt').value);
-    
-    // We ask for the quantity to add to the inventory stock
-    const qtyToAdd = parseInt(prompt("How many units are you adding to stock?", "0"));
+    const unitPrice = parseFloat(document.getElementById('pur-unit').value);
+    const qtyToAdd = parseInt(document.getElementById('pur-qty').value);
+    const totalAmt = parseFloat(document.getElementById('pur-amt').value);
+    const supplier = document.getElementById('pur-supplier').value || "General";
 
-    if (!itemName || isNaN(totalAmount) || isNaN(qtyToAdd)) {
-        return alert("Please fill Item Name, Total Cost, and enter a valid quantity in the prompt.");
+    // 1. Validation
+    if (!itemName || isNaN(qtyToAdd) || qtyToAdd <= 0) {
+        return alert("Please enter a valid Item and Quantity");
     }
 
-    // 1. Find item and update stock
-    const itemIdx = inventory.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
-    if (itemIdx > -1) {
-        inventory[itemIdx].stock = (parseInt(inventory[itemIdx].stock) || 0) + qtyToAdd;
+    // 2. FIND AND UPDATE THE INVENTORY STOCK
+    // We look for the item name in our global 'inventory' array
+    const itemIndex = inventory.findIndex(invItem => invItem.name.toLowerCase() === itemName.toLowerCase());
+
+    if (itemIndex > -1) {
+        // We found the item! Add the new quantity to the existing stock
+        let currentStock = parseInt(inventory[itemIndex].stock) || 0;
+        inventory[itemIndex].stock = currentStock + qtyToAdd;
+
+        // Save the updated inventory back to Firebase immediately
         db.ref(dbPath + '/inventory').set(inventory);
     } else {
-        alert("Item not found in inventory. Record saved, but stock not updated.");
+        // If the item doesn't exist, we alert the user
+        return alert("Error: This item does not exist in your Inventory. Add it to Inventory first!");
     }
 
-    // 2. Save to purchase records
-    const purchaseData = {
-        date: new Date().toISOString().split('T')[0],
+    // 3. LOG THE PURCHASE RECORD (HISTORY)
+    const purchaseEntry = {
+        time: new Date().toLocaleString(),
         item: itemName,
+        unitPrice: unitPrice,
+        qty: qtyToAdd,
+        amount: totalAmt,
         supplier: supplier,
-        amount: totalAmount,
         staff: currentUser.name
     };
 
-    db.ref(dbPath + '/purchases').push(purchaseData).then(() => {
-        alert("Purchase Logged & Stock Updated!");
+    const today = new Date().toISOString().split('T')[0];
+    db.ref(`reports/${bizId}/${today}/purchases`).push(purchaseEntry).then(() => {
+        alert(`Stock Updated! New ${itemName} total: ${inventory[itemIndex].stock}`);
+        
+        // 4. Clear the form
         document.getElementById('pur-item').value = "";
+        document.getElementById('pur-qty').value = "";
+        document.getElementById('pur-unit').value = "";
         document.getElementById('pur-amt').value = "";
-        document.getElementById('pur-supplier').value = "";
     });
 }
     function loadPurchases() {
@@ -1126,6 +1188,63 @@ function handleLogout() {
     
     // Optional: Refresh the page to ensure a clean state
     // location.reload(); 
+}
+// 1. Math Helper: Calculates the total amount as you type
+function calcPurTotal() {
+    const unit = parseFloat(document.getElementById('pur-unit').value) || 0;
+    const qty = parseFloat(document.getElementById('pur-qty').value) || 0;
+    document.getElementById('pur-amt').value = (unit * qty).toFixed(2);
+}
+
+// 2. The Main Function: Saves record and Restocks Inventory
+function addPurchase() {
+    const itemName = document.getElementById('pur-item').value;
+    const unitPrice = parseFloat(document.getElementById('pur-unit').value);
+    const qtyToAdd = parseInt(document.getElementById('pur-qty').value);
+    const totalAmt = parseFloat(document.getElementById('pur-amt').value);
+    const supplier = document.getElementById('pur-supplier').value || "General";
+
+    if (!itemName || isNaN(qtyToAdd) || qtyToAdd <= 0) {
+        return alert("Please enter a valid Item and Quantity");
+    }
+
+    // --- STEP A: UPDATE INVENTORY STOCK ---
+    // Search for the item in your current inventory list
+    const itemIndex = inventory.findIndex(invItem => invItem.name.toLowerCase() === itemName.toLowerCase());
+
+    if (itemIndex > -1) {
+        // Item found! Increase the stock
+        let currentStock = parseInt(inventory[itemIndex].stock) || 0;
+        inventory[itemIndex].stock = currentStock + qtyToAdd;
+
+        // Push updated inventory to Firebase
+        db.ref(dbPath + '/inventory').set(inventory);
+    } else {
+        // Prevent accidental logs for items that don't exist
+        return alert("Error: This item does not exist in Inventory. Please create the product in 'Inventory Management' first.");
+    }
+
+    // --- STEP B: LOG THE PURCHASE RECORD ---
+    const purchaseEntry = {
+        time: new Date().toLocaleTimeString(),
+        item: itemName,
+        unitPrice: unitPrice,
+        qty: qtyToAdd,
+        amount: totalAmt,
+        supplier: supplier,
+        staff: currentUser.name
+    };
+
+    const today = new Date().toISOString().split('T')[0];
+    db.ref(`reports/${bizId}/${today}/purchases`).push(purchaseEntry).then(() => {
+        alert(`Stock Updated! New ${itemName} total: ${inventory[itemIndex].stock}`);
+        
+        // Clear the form fields
+        ['pur-item', 'pur-qty', 'pur-unit', 'pur-amt', 'pur-supplier'].forEach(id => {
+            document.getElementById(id).value = "";
+        });
+        loadPurchases(); // Refresh the table view
+    });
 }
 </script>
 </body>
