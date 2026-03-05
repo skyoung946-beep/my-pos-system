@@ -381,10 +381,13 @@
             </div>
             <table><thead><tr><th>Product</th><th>Category</th><th>Cost</th><th>Price (Edit)</th><th>Margin %</th><th>Stock (Edit)</th><th>Action</th></tr></thead><tbody id="stock-body"></tbody></table>
             
-            <div id="danger-zone-admin" style="display:none; margin-top:50px; padding:20px; border:1px dashed #fca5a5; border-radius:15px; background:#fff1f1;">
-                <h4 style="color:#b91c1c; margin-top:0;">Danger Zone</h4>
-                <button onclick="deleteCurrentBusiness()" style="background:#dc2626; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer;">DELETE BUSINESS PERMANENTLY</button>
-            </div>
+            <div style="margin-top: 30px; padding: 15px; border: 1px solid #dc2626; border-radius: 8px; background: #fff1f2;">
+    <h3 style="color: #dc2626; margin-top: 0;">Danger Zone</h3>
+    <p style="font-size: 0.85rem; color: #64748b;">Deleting this business will permanently remove all products, sales records, and settings. This cannot be undone.</p>
+    <button onclick="deleteCurrentBusiness()" style="background: #dc2626; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+        🗑️ Delete Entire Business
+    </button>
+</div>
         </div>
 
         <div id="staff-page" class="page-content">
@@ -1614,6 +1617,37 @@ async function exportFullHistoryExcel() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(financials), "Financial Summary");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(auditLogs), "Inventory Audits");
     XLSX.writeFile(wb, `Yearly_Report_${new Date().getFullYear()}.xlsx`);
+}async function deleteCurrentBusiness() {
+    // 1. Safety Prompt
+    const confirmation = confirm("ARE YOU SURE? This will wipe ALL data for " + bizId.toUpperCase() + " permanently.");
+    if (!confirmation) return;
+
+    // 2. Double Confirmation (Type ID to confirm)
+    const typedConfirm = prompt("To confirm deletion, please type the Business ID (" + bizId + ") below:");
+    
+    if (typedConfirm === bizId) {
+        try {
+            // Show loading state
+            alert("Deleting business data... please wait.");
+
+            // 3. Remove from Registry (Products, Staff, Settings)
+            await db.ref(`registry/${bizId}`).remove();
+
+            // 4. Remove from Reports (Sales, Expenses, Audits)
+            await db.ref(`reports/${bizId}`).remove();
+
+            alert("Business '" + bizId + "' has been successfully deleted.");
+            
+            // 5. Force logout and refresh to the Directory screen
+            location.reload(); 
+
+        } catch (error) {
+            console.error("Delete failed:", error);
+            alert("Error: Could not delete business. Check your internet or permissions.");
+        }
+    } else {
+        alert("ID mismatch. Deletion cancelled.");
+    }
 }
 </script>
 </body>
