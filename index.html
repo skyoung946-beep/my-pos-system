@@ -58,6 +58,21 @@
         .page-content { display: none; }
         .page-content.active { display: block; }
         .inline-edit { width: 60px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; }
+        .remove-btn {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 11px;
+    transition: 0.2s;
+}
+.remove-btn:hover {
+    background: #dc2626;
+    color: white;
+}
     </style>
 </head>
 <body>
@@ -429,7 +444,6 @@
             <div id="pur-day-total" style="font-size: 24px; font-weight: bold;">0.00</div>
         </div>
     </div>
-    ...
 
     <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
         <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap: 10px; align-items: end;">
@@ -684,11 +698,32 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
     }
 
     function updateCartUI() {
-        let total = 0;
-        document.getElementById('cart-list').innerHTML = cart.map(c => { total += parseFloat(c.price); return `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee"><span>${c.name}</span><span>₵${c.price}</span></div>`; }).join('');
-        document.getElementById('cart-total').innerText = "₵" + total.toFixed(2);
-        document.getElementById('cart-count').innerText = cart.length;
-    }
+    const list = document.getElementById('cart-list');
+    list.innerHTML = cart.map((item, index) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee; background:white; margin-bottom:5px; border-radius:8px;">
+            <div style="flex: 1;">
+                <div style="font-weight:bold; font-size:13px;">${item.name}</div>
+                <div style="color:#64748b; font-size:11px;">${item.qty} x ₵${item.price.toFixed(2)}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="font-weight:bold; color:var(--primary);">₵${(item.qty * item.price).toFixed(2)}</div>
+                <button onclick="removeFromCart(${index})" class="remove-btn">✕</button>
+            </div>
+        </div>
+    `).join('');
+
+    const total = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+    document.getElementById('cart-total').innerText = `₵${total.toFixed(2)}`;
+    document.getElementById('cart-count').innerText = cart.length;
+}
+
+// New Function to handle removal
+function removeFromCart(index) {
+    // Remove 1 item from the array at the specific position
+    cart.splice(index, 1);
+    // Refresh the UI
+    updateCartUI();
+}
 
     function processSale() {
         if(!cart.length) return;
