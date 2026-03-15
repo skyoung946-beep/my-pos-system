@@ -743,9 +743,43 @@ function removeFromCart(index) {
     updateCartUI();
 }
 
-    function processSale(paymentMethod = 'Cash') {
-    // ... inside your logic where you push to Firebase, add:
-    // method: paymentMethod
+    function processSale(method = 'Cash') {
+    if(!cart.length) return;
+    const today = new Date().toISOString().split('T')[0];
+    let total = 0, profit = 0;
+    const items = JSON.parse(JSON.stringify(cart));
+
+    db.ref(dbPath + '/inventory').transaction(inv => {
+        if(inv) {
+            items.forEach(c => {
+                const dbI = inv.find(x => x.id === c.id);
+                if(dbI && dbI.stock > 0) {
+                    dbI.stock--;
+                    total += parseFloat(dbI.price);
+                    profit += (dbI.price - (dbI.costPrice || 0));
+                }
+            });
+        }
+        return inv;
+    }, (err, comm) => {
+        if(comm) {
+            // Save the sale with the payment method (Cash or Card)
+            db.ref(`reports/${bizId}/${today}/sales`).push({
+                staff: currentUser.name,
+                total: total.toFixed(2),
+                profit: profit.toFixed(2),
+                paymentMethod: method, // This records if it was Paystack
+                itemDetails: items,
+                time: new Date().toLocaleTimeString()
+            });
+            
+            cart = [];
+            updateCartUI();
+            alert("Sale Finalized via " + method);
+        } else {
+            alert("Error finalizing sale. Please check your internet.");
+        }
+    });
 }
 
     function loadReports() {
@@ -1697,14 +1731,15 @@ function payWithPaystack() {
     if (total <= 0) return alert("Cart is empty!");
 
     const handler = PaystackPop.setup({
-        // YOUR SPECIFIC KEY
-        key: 'pk_test_e0ba713a7105e4b8009a1d8c447c84c77b779903', 
+        // YOUR NEW TEST KEY
+        key: 'pk_test_a0b66e5280e30a9bba4ff344deef0ee769e2b8b7', 
         email: 'customer@bar-pos.com',
-        amount: Math.round(total * 100), // Paystack needs amount in pesewas
-        currency: 'GHS',
+        amount: Math.round(total * 100), // Converts GHS to Pesewas
+        currency: 'GHS', // <--- IMPORTANT: Change to 'NGN' if your account is Nigerian
         callback: function(response) {
             alert('Payment successful! Reference: ' + response.reference);
-            processSale('Card'); 
+            // Call your sale function and pass 'Card' to record it
+            processSale('Card Payment'); 
         },
         onClose: function() {
             alert('Transaction cancelled.');
