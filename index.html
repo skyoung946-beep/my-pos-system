@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script src="https://js.paystack.co/v1/inline.js"></script>
     
     <style>
         :root { 
@@ -525,6 +526,14 @@
             <div style="display:flex; justify-content:space-between; font-size:24px; font-weight:900; color:var(--primary);">
                 <span>Total:</span><span id="cart-total">₵0.00</span>
             </div>
+            <div class="cart-section">
+    <div style="margin-top: auto; padding-top: 20px;">
+        <h3 id="cart-total">₵0.00</h3>
+        <button onclick="payWithPaystack()" style="width:100%; padding:15px; background:#011b33; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+            <span style="font-size:1.2rem;">💳</span> Pay with Paystack
+        </button>
+    </div>
+</div>
             <button class="btn-pay" style="width:100%; padding:18px; background:var(--green); border:none; color:white; font-weight:bold; border-radius:12px; margin-top:15px; cursor:pointer;" onclick="processSale()">FINALIZE SALE</button>
         </div>
     </div>
@@ -692,10 +701,20 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
     }
 
     function addToCart(id) {
-        const item = inventory.find(i => i.id === id);
-        if(!item || item.stock <= 0) return alert("No Stock");
-        cart.push({...item}); updateCartUI();
+    const item = inventory.find(i => i.id === id);
+    if (!item) return;
+    
+    // Check if item is already in cart to increment quantity
+    const cartItem = cart.find(c => c.id === id);
+    if (cartItem) {
+        cartItem.qty++;
+    } else {
+        cart.push({ ...item, qty: 1 });
     }
+
+    // CRITICAL: This line updates the total on your screen
+    updateCartUI(); 
+}
 
     function updateCartUI() {
     const list = document.getElementById('cart-list');
@@ -712,9 +731,8 @@ document.getElementById('nav-reports').style.display = isAdmin ? 'block' : 'none
         </div>
     `).join('');
 
-    const total = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
-    document.getElementById('cart-total').innerText = `₵${total.toFixed(2)}`;
-    document.getElementById('cart-count').innerText = cart.length;
+    cart.reduce((sum, item) => sum + (parseFloat(item.qty) * parseFloat(item.price)), 0);
+    document.getElementById('cart-total').innerText = '₵' + cart.reduce((sum, item) => sum + (parseFloat(item.qty) * parseFloat(item.price)), 0).toFixed(2);
 }
 
 // New Function to handle removal
@@ -725,26 +743,10 @@ function removeFromCart(index) {
     updateCartUI();
 }
 
-    function processSale() {
-        if(!cart.length) return;
-        const today = new Date().toISOString().split('T')[0];
-        let total = 0, profit = 0;
-        const items = JSON.parse(JSON.stringify(cart));
-        db.ref(dbPath + '/inventory').transaction(inv => {
-            if(inv) {
-                items.forEach(c => {
-                    const dbI = inv.find(x => x.id === c.id);
-                    if(dbI && dbI.stock > 0) { dbI.stock--; total += parseFloat(dbI.price); profit += (dbI.price - (dbI.costPrice || 0)); }
-                });
-            }
-            return inv;
-        }, (err, comm) => {
-            if(comm) {
-                db.ref(`reports/${bizId}/${today}/sales`).push({ staff: currentUser.name, total: total.toFixed(2), profit: profit.toFixed(2), itemDetails: items });
-                cart = []; updateCartUI(); alert("Sale OK");
-            }
-        });
-    }
+    function processSale(paymentMethod = 'Cash') {
+    // ... inside your logic where you push to Firebase, add:
+    // method: paymentMethod
+}
 
     function loadReports() {
         db.ref(`reports/${bizId}`).once('value', s => {
@@ -1683,6 +1685,33 @@ async function exportFullHistoryExcel() {
     } else {
         alert("ID mismatch. Deletion cancelled.");
     }
+}
+function loadPurchases() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('pur-search-date').value = today;
+    loadPurchasesByDate(); // This calls the function that DOES exist
+}
+function payWithPaystack() {
+    const total = cart.reduce((sum, item) => sum + (parseFloat(item.qty) * parseFloat(item.price)), 0);
+    
+    if (total <= 0) return alert("Cart is empty!");
+
+    const handler = PaystackPop.setup({
+        // YOUR SPECIFIC KEY
+        key: 'pk_test_e0ba713a7105e4b8009a1d8c447c84c77b779903', 
+        email: 'customer@bar-pos.com',
+        amount: Math.round(total * 100), // Paystack needs amount in pesewas
+        currency: 'GHS',
+        callback: function(response) {
+            alert('Payment successful! Reference: ' + response.reference);
+            processSale('Card'); 
+        },
+        onClose: function() {
+            alert('Transaction cancelled.');
+        }
+    });
+
+    handler.openIframe();
 }
 </script>
 </body>
