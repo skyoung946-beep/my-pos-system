@@ -21,6 +21,24 @@
             50% { background-color: #fee2e2; border-color: var(--red); transform: scale(0.98); }
         }
         .low-stock-alert { animation: blinker 1.5s linear infinite; border: 2px solid var(--red) !important; }
+        @media print {
+    /* Hide everything on the page */
+    body * {
+        visibility: hidden;
+    }
+    /* Show only the receipt container */
+    #print-template, #print-template * {
+        visibility: visible;
+    }
+    /* Position the receipt at the top left of the printed paper */
+    #print-template {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block !important;
+    }
+}
 
         @keyframes pulse-red {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
@@ -535,7 +553,22 @@
     </div>
 </div>
             <button class="btn-pay" style="width:100%; padding:18px; background:var(--green); border:none; color:white; font-weight:bold; border-radius:12px; margin-top:15px; cursor:pointer;" onclick="processSale()">FINALIZE SALE</button>
+            <button onclick="printReceipt()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; margin-top:10px;">
+    🖨️ Print Receipt
+</button>
         </div>
+    </div>
+</div>
+<div id="print-template" style="display:none; padding: 20px; font-family: monospace; width: 80mm;">
+    <div style="text-align:center;">
+        <h2 id="print-biz-name" style="margin:0; text-transform: uppercase;"></h2>
+        <p id="print-date" style="margin:5px 0; font-size: 12px;"></p>
+        <hr>
+    </div>
+    <div id="print-items"></div>
+    <hr>
+    <div style="text-align:right; font-weight:bold; font-size: 1.2rem;">
+        Total: <span id="print-total">₵0.00</span>
     </div>
 </div>
 
@@ -1776,7 +1809,32 @@ function payWithPaystack() {
 
     handler.openIframe();
 }
+function printReceipt() {
+    if (cart.length === 0) return alert("Cart is empty!");
+
+    // 1. Get the business name from your existing registry object
+    const bizName = registry[bizId] ? registry[bizId].name : "Enterprise POS";
+    document.getElementById('print-biz-name').innerText = bizName;
+    document.getElementById('print-date').innerText = new Date().toLocaleString();
+    
+    // 2. Populate Items from your 'cart' array
+    const itemsList = document.getElementById('print-items');
+    itemsList.innerHTML = cart.map(item => `
+        <div style="display:flex; justify-content:space-between; margin:5px 0;">
+            <span>${item.name} x ${item.qty}</span>
+            <span>₵${(item.qty * item.price).toFixed(2)}</span>
+        </div>
+    `).join('');
+
+    // 3. Populate Total
+    document.getElementById('print-total').innerText = document.getElementById('cart-total').innerText;
+
+    // 4. Trigger print
+    const printContent = document.getElementById('print-template');
+    printContent.style.display = 'block';
+    window.print();
+    printContent.style.display = 'none';
+}
 </script>
 </body>
 </html>
-
