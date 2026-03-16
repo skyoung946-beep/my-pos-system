@@ -745,6 +745,7 @@ function removeFromCart(index) {
 
     function processSale(method = 'Cash') {
     if(!cart.length) return;
+    
     const today = new Date().toISOString().split('T')[0];
     let total = 0, profit = 0;
     const items = JSON.parse(JSON.stringify(cart));
@@ -756,19 +757,19 @@ function removeFromCart(index) {
                 if(dbI && dbI.stock > 0) {
                     dbI.stock--;
                     total += parseFloat(dbI.price);
-                    profit += (dbI.price - (dbI.costPrice || 0));
+                    profit += (parseFloat(dbI.price) - parseFloat(dbI.costPrice || 0));
                 }
             });
         }
         return inv;
     }, (err, comm) => {
         if(comm) {
-            // Save the sale with the payment method (Cash or Card)
+            // Push the sale record
             db.ref(`reports/${bizId}/${today}/sales`).push({
                 staff: currentUser.name,
                 total: total.toFixed(2),
                 profit: profit.toFixed(2),
-                paymentMethod: method, // This records if it was Paystack
+                paymentMethod: method, // Will be 'Cash', 'Card', or 'MoMo'
                 itemDetails: items,
                 time: new Date().toLocaleTimeString()
             });
@@ -777,7 +778,7 @@ function removeFromCart(index) {
             updateCartUI();
             alert("Sale Finalized via " + method);
         } else {
-            alert("Error finalizing sale. Please check your internet.");
+            alert("Error finalizing sale: " + (err ? err.message : "Database conflict."));
         }
     });
 }
@@ -1207,20 +1208,32 @@ function fetchDailyAudit() {
     const date = document.getElementById('daily-audit-date').value;
     if (!date) return;
 
+    // Fetch the daily report node
     db.ref(`reports/${bizId}/${date}`).once('value', s => {
         const data = s.val() || {};
         let tSales = 0, tProf = 0, tExp = 0;
+        
+        // New variables to track payment totals
+        let cashTotal = 0, momoTotal = 0, cardTotal = 0;
         let rows = "";
 
         if (data.sales) {
             Object.values(data.sales).forEach(sale => {
                 tSales += parseFloat(sale.total || 0);
                 tProf += parseFloat(sale.profit || 0);
+                
+                // Track totals by method
+                const method = sale.paymentMethod || 'Cash';
+                if (method === 'Cash') cashTotal += parseFloat(sale.total || 0);
+                if (method === 'MoMo') momoTotal += parseFloat(sale.total || 0);
+                if (method === 'Card') cardTotal += parseFloat(sale.total || 0);
+
                 const items = sale.itemDetails ? sale.itemDetails.map(i => `${i.name} (${i.qty})`).join(", ") : "N/A";
                 
                 rows += `<tr>
                     <td>${sale.time || 'N/A'}</td>
                     <td>${sale.staff || 'N/A'}</td>
+                    <td><span style="font-weight:bold; color:var(--accent)">${method}</span></td>
                     <td style="font-size:11px;">${items}</td>
                     <td>₵${parseFloat(sale.total).toFixed(2)}</td>
                     <td style="color:var(--accent)">₵${parseFloat(sale.profit || 0).toFixed(2)}</td>
@@ -1228,13 +1241,20 @@ function fetchDailyAudit() {
             });
         }
 
+        // Calculate other costs
         if (data.expenses) Object.values(data.expenses).forEach(e => tExp += parseFloat(e.amount || 0));
         if (data.purchases) Object.values(data.purchases).forEach(p => tExp += parseFloat(p.amount || 0));
 
+        // Update main dashboard totals
         document.getElementById('da-sales').innerText = "₵" + tSales.toFixed(2);
         document.getElementById('da-profit').innerText = "₵" + tProf.toFixed(2);
         document.getElementById('da-exp').innerText = "₵" + tExp.toFixed(2);
-        document.getElementById('daily-audit-body').innerHTML = rows || '<tr><td colspan="5" style="text-align:center;">No records found for this date.</td></tr>';
+        
+        // Populate table
+        document.getElementById('daily-audit-body').innerHTML = rows || '<tr><td colspan="6" style="text-align:center;">No records found for this date.</td></tr>';
+        
+        // Optional: Log totals to console to verify
+        console.log(`Cash: ${cashTotal}, MoMo: ${momoTotal}, Card: ${cardTotal}`);
     });
 }
 
