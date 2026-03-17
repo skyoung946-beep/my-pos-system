@@ -448,21 +448,39 @@
     <tbody id="staff-body"></tbody>
 </table>
         </div>
-
-  <div id="purchase-page" class="page-content" style="display:none;">
+<div id="purchase-page" class="page-content" style="display:none;">
     <div style="background:var(--primary); color:white; padding:20px; border-radius:12px; margin-bottom:20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <h2 style="margin:0;">📦 Stock Procurement</h2>
-            <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-                <input type="date" id="pur-search-date" style="padding:5px 10px; border-radius:5px; border:none; color:black;">
-                <button onclick="loadPurchasesByDate()" style="background:#fbbf24; color:black; border:none; padding:6px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">🔍 View Date</button>
-            </div>
+            <h2 style="margin:0;">📦 Bulk Stock Procurement</h2>
+            <p style="margin:5px 0 0 0; opacity:0.9; font-size:12px;">Update inventory levels by entering newly bought quantities</p>
         </div>
-        <div style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 10px; text-align: right;">
-            <div id="pur-date-label" style="font-size: 11px; text-transform: uppercase; opacity: 0.9;">Today's Total</div>
-            <div id="pur-day-total" style="font-size: 24px; font-weight: bold;">0.00</div>
-        </div>
+        <button onclick="renderProcurementTable()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">🔄 Refresh Product List</button>
     </div>
+
+    <div style="background:white; padding:10px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px; overflow-x: auto;">
+        <table id="procurement-table">
+            <thead>
+                <tr style="background: #f1f5f9;">
+                    <th>Item Name</th>
+                    <th>System Qty</th>
+                    <th>Unit Cost (₵)</th>
+                    <th>Selling Price (₵)</th>
+                    <th style="color:var(--accent)">+ New Qty Bought</th>
+                    <th>Total Cost</th>
+                </tr>
+            </thead>
+            <tbody id="procurement-body">
+                </tbody>
+        </table>
+    </div>
+
+    <div style="text-align: right; padding: 20px; background: white; border-radius: 12px; border: 1px solid var(--border);">
+        <span style="margin-right: 20px; font-weight: bold; color: var(--text);">Grand Total Procurement: <span id="procure-grand-total" style="color:var(--green)">₵0.00</span></span>
+        <button onclick="saveBulkProcurement()" style="background:var(--green); color:white; border:none; padding:15px 40px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px; box-shadow: 0 4px 6px rgba(5, 150, 105, 0.2);">
+            📥 Save Purchases & Update Inventory
+        </button>
+    </div>
+</div>
 
     <div style="background:white; padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px;">
         <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 2fr; gap: 10px; align-items: end;">
@@ -1834,6 +1852,97 @@ function printReceipt() {
     printContent.style.display = 'block';
     window.print();
     printContent.style.display = 'none';
+}
+// Function to load all available items into the procurement table
+function renderProcurementTable() {
+    const tbody = document.getElementById('procurement-body');
+    tbody.innerHTML = '';
+    let grandTotal = 0;
+
+    // 'inventory' should be your local object/array holding the products
+    // Replace with your actual variable name if it differs
+    Object.keys(inventory).forEach(id => {
+        const item = inventory[id];
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td style="font-weight:bold;">${item.name}</td>
+            <td style="color:#64748b;">${item.qty || 0}</td>
+            <td>₵${parseFloat(item.cost || 0).toFixed(2)}</td>
+            <td>₵${parseFloat(item.price || 0).toFixed(2)}</td>
+            <td>
+                <input type="number" class="new-qty-input" 
+                       data-id="${id}" data-cost="${item.cost}" 
+                       placeholder="0" oninput="calcProcureGrandTotal()"
+                       style="width:80px; padding:5px; border:1px solid var(--accent); border-radius:4px;">
+            </td>
+            <td class="item-total-cost">₵0.00</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Calculates the total cost of the restock as you type
+function calcProcureGrandTotal() {
+    let grandTotal = 0;
+    const rows = document.querySelectorAll('#procurement-body tr');
+    
+    rows.forEach(row => {
+        const input = row.querySelector('.new-qty-input');
+        const totalCell = row.querySelector('.item-total-cost');
+        const qty = parseFloat(input.value) || 0;
+        const cost = parseFloat(input.dataset.cost) || 0;
+        
+        const lineTotal = qty * cost;
+        totalCell.innerText = `₵${lineTotal.toFixed(2)}`;
+        grandTotal += lineTotal;
+    });
+    
+    document.getElementById('procure-grand-total').innerText = `₵${grandTotal.toFixed(2)}`;
+}
+
+// The "Save" logic: Adds new qty to system qty and syncs to Firebase
+function saveBulkProcurement() {
+    const inputs = document.querySelectorAll('.new-qty-input');
+    const updates = {};
+    let itemsUpdated = 0;
+
+    inputs.forEach(input => {
+        const id = input.dataset.id;
+        const addedQty = parseFloat(input.value) || 0;
+
+        if (addedQty > 0) {
+            // Update local memory
+            inventory[id].qty = (parseFloat(inventory[id].qty) || 0) + addedQty;
+            
+            // Prepare Firebase update
+            updates[`/products/${id}/qty`] = inventory[id].qty;
+            itemsUpdated++;
+
+            // Optional: Log this into a separate "Purchases" history node
+            const purchaseRef = firebase.database().ref('purchase_records').push();
+            purchaseRef.set({
+                date: new Date().toISOString().split('T')[0],
+                itemName: inventory[id].name,
+                qtyAdded: addedQty,
+                unitCost: inventory[id].cost,
+                totalCost: addedQty * inventory[id].cost,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+    });
+
+    if (itemsUpdated > 0) {
+        firebase.database().ref().update(updates)
+            .then(() => {
+                alert(`Success! Updated stock for ${itemsUpdated} items.`);
+                renderProcurementTable(); // Refresh table
+                if(typeof renderInventory === 'function') renderInventory(); // Update main inventory list
+            })
+            .catch(err => alert("Error updating stock: " + err.message));
+    } else {
+        alert("Please enter a quantity for at least one item.");
+    }
 }
 </script>
 </body>
