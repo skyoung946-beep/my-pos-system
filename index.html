@@ -19,10 +19,10 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <!-- Add Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <!-- Add XLSX for Excel export/import -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <!-- Add jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -55,16 +55,16 @@
             --sidebar-collapsed: 70px;
         }
 
-        /* 9 Color Themes - NEW */
-        body.theme-purple { --accent-primary: #8b5cf6; --accent-secondary: #a78bfa; }
-        body.theme-green { --accent-primary: #10b981; --accent-secondary: #34d399; }
-        body.theme-orange { --accent-primary: #f59e0b; --accent-secondary: #fbbf24; }
-        body.theme-pink { --accent-primary: #ec489a; --accent-secondary: #f472b6; }
-        body.theme-teal { --accent-primary: #14b8a6; --accent-secondary: #2dd4bf; }
-        body.theme-cyan { --accent-primary: #06b6d4; --accent-secondary: #22d3ee; }
-        body.theme-dark { --bg-primary: #030712; --bg-secondary: #111827; --bg-tertiary: #1f2937; --accent-primary: #3b82f6; --accent-secondary: #60a5fa; }
-        body.theme-light { --bg-primary: #f9fafb; --bg-secondary: #ffffff; --bg-tertiary: #f3f4f6; --text-primary: #111827; --text-secondary: #6b7280; --border: #e5e7eb; }
-        body.theme-blue { --accent-primary: #2563eb; --accent-secondary: #3b82f6; }
+        /* 9 Color Themes - FIXED */
+        body.theme-purple { --accent-primary: #8b5cf6; --accent-secondary: #a78bfa; --bg-primary: #0a0b0e; --bg-secondary: #141517; --text-primary: #ffffff; }
+        body.theme-green { --accent-primary: #10b981; --accent-secondary: #34d399; --bg-primary: #0a0b0e; --bg-secondary: #141517; --text-primary: #ffffff; }
+        body.theme-orange { --accent-primary: #f59e0b; --accent-secondary: #fbbf24; --bg-primary: #0a0b0e; --bg-secondary: #141517; --text-primary: #ffffff; }
+        body.theme-pink { --accent-primary: #ec489a; --accent-secondary: #f472b6; --bg-primary: #0a0b0e; --bg-secondary: #141517; --text-primary: #ffffff; }
+        body.theme-teal { --accent-primary: #14b8a6; --accent-secondary: #2dd4bf; --bg-primary: #0a0b0e; --bg-secondary: #141517; --text-primary: #ffffff; }
+        body.theme-cyan { --accent-primary: #06b6d4; --accent-secondary: #22d3ee; --bg-primary: #0a0b0e; --bg-secondary: #141517; --text-primary: #ffffff; }
+        body.theme-dark { --accent-primary: #3b82f6; --accent-secondary: #60a5fa; --bg-primary: #030712; --bg-secondary: #111827; --bg-tertiary: #1f2937; --text-primary: #ffffff; --text-secondary: #9ca3af; --border: #374151; }
+        body.theme-light { --accent-primary: #6366f1; --accent-secondary: #8b5cf6; --bg-primary: #f9fafb; --bg-secondary: #ffffff; --bg-tertiary: #f3f4f6; --text-primary: #111827; --text-secondary: #6b7280; --border: #e5e7eb; }
+        body.theme-blue { --accent-primary: #2563eb; --accent-secondary: #3b82f6; --bg-primary: #0a0b0e; --bg-secondary: #141517; --text-primary: #ffffff; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -2568,6 +2568,15 @@
             color: white !important;
             border: none !important;
         }
+        /* Customer Management CSS */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.customer-card { background: var(--bg-tertiary); border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); transition: all 0.2s; cursor: pointer; }
+.customer-card:hover { border-color: var(--accent-primary); transform: translateX(4px); }
+@media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+/* Returns CSS */
+.return-card { background: var(--bg-tertiary); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); transition: all 0.2s; }
+.return-card:hover { border-color: var(--accent-primary); transform: translateX(4px); }
+.return-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; background: var(--danger); color: white; }
     </style>
 </head>
 <body>
@@ -2630,9 +2639,17 @@
                     <span>📦</span>
                     <span>Inventory</span>
                 </div>
+                                <div class="nav-item" data-tab="customers" onclick="switchTab('customers'); if(window.innerWidth <= 768) closeMobileMenu();">
+                    <span>👥</span>
+                    <span>Customers</span>
+                </div>
                 <div class="nav-item" data-tab="reports" onclick="switchTab('reports'); if(window.innerWidth <= 768) closeMobileMenu();">
                     <span>📈</span>
                     <span>Reports</span>
+                </div>
+                                <div class="nav-item" data-tab="returns" onclick="switchTab('returns'); if(window.innerWidth <= 768) closeMobileMenu();">
+                    <span>🔄</span>
+                    <span>Returns</span>
                 </div>
                 <div class="nav-item" data-tab="audit" onclick="switchTab('audit'); if(window.innerWidth <= 768) closeMobileMenu();">
                     <span>🔍</span>
@@ -3225,6 +3242,35 @@
             </div>
         </div>
     </div>
+        <!-- Add Customer Modal -->
+    <div class="modal" id="addCustomerModal">
+        <div class="modal-content small">
+            <div class="modal-close" onclick="closeModal('addCustomerModal')">
+                <i class="fas fa-times"></i>
+            </div>
+            <h2 style="margin-bottom: 24px;">Add New Customer</h2>
+            <div class="form-group">
+                <label>Customer Name <span style="color: var(--danger);">*</span></label>
+                <input type="text" id="customerName" placeholder="e.g., John Doe">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="customerPhone" placeholder="e.g., 054xxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="customerEmail" placeholder="customer@example.com">
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <textarea id="customerAddress" rows="2" placeholder="Customer address"></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('addCustomerModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+            </div>
+        </div>
+    </div>
 
     <!-- PIN Login Modal -->
     <div class="modal" id="pinLoginModal">
@@ -3293,7 +3339,61 @@
             </div>
         </div>
     </div>
-
+    <!-- Process Return Modal -->
+    <div class="modal" id="processReturnModal">
+        <div class="modal-content small">
+            <div class="modal-close" onclick="closeModal('processReturnModal')">
+                <i class="fas fa-times"></i>
+            </div>
+            <h2 style="margin-bottom: 24px;">Process Product Return</h2>
+            <div class="form-group">
+                <label>Select Product</label>
+                <select id="returnProductSelect">
+                    <option value="">Choose a product</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quantity to Return</label>
+                <input type="number" id="returnQuantity" min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label>Reason for Return</label>
+                <select id="returnReason">
+                    <option value="Damaged">🔨 Damaged Product</option>
+                    <option value="Expired">📅 Expired</option>
+                    <option value="Wrong Item">❌ Wrong Item Sent</option>
+                    <option value="Customer Return">🔄 Customer Returned</option>
+                    <option value="Quality Issue">⭐ Quality Issue</option>
+                    <option value="Other">📝 Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Refund Amount (GHS)</label>
+                <input type="number" id="returnAmount" step="0.01" readonly>
+            </div>
+            <div class="form-group">
+                <label>Additional Notes</label>
+                <textarea id="returnNotes" rows="2" placeholder="Optional notes about this return..."></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('processReturnModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="processReturn()">Process Return & Refund</button>
+            </div>
+        </div>
+    </div>
+        <!-- Receipt Modal -->
+    <div class="modal" id="receiptModal">
+        <div class="modal-content small">
+            <div class="modal-close" onclick="closeModal('receiptModal')">
+                <i class="fas fa-times"></i>
+            </div>
+            <div id="receiptContent" class="receipt-print"></div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="printReceipt()"><i class="fas fa-print"></i> Print Receipt</button>
+                <button class="btn btn-primary" onclick="closeModal('receiptModal')">Close</button>
+            </div>
+        </div>
+    </div>
     <!-- Paystack Processing Indicator -->
     <div class="paystack-processing" id="paystackProcessing">
         <div class="processing-spinner"></div>
@@ -3302,13 +3402,736 @@
     </div>
 
     <script>
-        // ==================== FIREBASE CONFIGURATION ====================
+        // ==================== FIREBASE CONFIGURATION (FIX #1 & #5) ====================
         const firebaseConfig = { 
             databaseURL: "https://enterprise-pos-bf904-default-rtdb.firebaseio.com/" 
         };
         
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        let db;
+        let firebaseAvailable = true;
+        
+        try {
+            if (typeof firebase !== 'undefined' && firebase.apps) {
+                if (firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.database();
+                console.log("✅ Firebase connected");
+            } else {
+                throw new Error("Firebase not loaded");
+            }
+        } catch(e) {
+            console.warn("⚠️ Firebase failed, using localStorage fallback");
+            firebaseAvailable = false;
+            // localStorage fallback for offline mode (FIX #9)
+            db = {
+                ref: (path) => ({
+                    on: (event, callback) => {
+                        const key = path.replace(/\//g, '_');
+                        const data = localStorage.getItem(key);
+                        callback({ val: () => data ? JSON.parse(data) : {} });
+                        return () => {};
+                    },
+                    once: (event) => Promise.resolve({ 
+                        val: () => {
+                            const key = path.replace(/\//g, '_');
+                            const data = localStorage.getItem(key);
+                            return data ? JSON.parse(data) : {};
+                        }
+                    }),
+                    set: (data) => {
+                        localStorage.setItem(path.replace(/\//g, '_'), JSON.stringify(data));
+                        return Promise.resolve();
+                    },
+                    push: (data) => {
+                        const key = Date.now() + '_' + Math.random();
+                        const existingKey = path.replace(/\//g, '_');
+                        const existing = JSON.parse(localStorage.getItem(existingKey) || '{}');
+                        existing[key] = data;
+                        localStorage.setItem(existingKey, JSON.stringify(existing));
+                        return Promise.resolve({ key });
+                    },
+                    remove: () => {
+                        localStorage.removeItem(path.replace(/\//g, '_'));
+                        return Promise.resolve();
+                    }
+                })
+            };
+        }
+
+        // ==================== ADVANCED DATA VALIDATION SYSTEM (FIX #3) ====================
+
+class DataValidator {
+    constructor() {
+        this.rules = {
+            product: {
+                name: { min: 2, max: 100, required: true, pattern: /^[a-zA-Z0-9\s\-_&()]+$/ },
+                category: { min: 2, max: 50, required: true, pattern: /^[a-zA-Z0-9\s\-_&]+$/ },
+                price: { min: 0.01, max: 999999.99, required: true, type: 'number' },
+                costPrice: { min: 0, max: 999999.99, type: 'number' },
+                stock: { min: 0, max: 999999, type: 'integer', required: true },
+                minStock: { min: 0, max: 99999, type: 'integer' }
+            },
+            staff: {
+                name: { min: 2, max: 100, required: true, pattern: /^[a-zA-Z\s\-']+$/ },
+                email: { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, required: true },
+                pin: { exact: 4, pattern: /^\d{4}$/, required: true },
+                role: { values: ['admin', 'supervisor', 'staff'], required: true }
+            },
+            transaction: {
+                amount: { min: 0.01, max: 999999.99, required: true },
+                paymentMethod: { values: ['cash', 'momo', 'card'], required: true }
+            },
+            shop: {
+                name: { min: 2, max: 100, required: true },
+                type: { min: 2, max: 50, required: true }
+            }
+        };
+    }
+
+    validateProduct(product) {
+        const errors = [];
+        
+        if (!product.name || product.name.trim().length < this.rules.product.name.min) {
+            errors.push(`Product name must be at least ${this.rules.product.name.min} characters`);
+        }
+        if (product.name && product.name.length > this.rules.product.name.max) {
+            errors.push(`Product name cannot exceed ${this.rules.product.name.max} characters`);
+        }
+        if (product.name && !this.rules.product.name.pattern.test(product.name)) {
+            errors.push('Product name contains invalid characters (use letters, numbers, spaces, and basic punctuation)');
+        }
+        
+        if (!product.price || product.price < this.rules.product.price.min) {
+            errors.push(`Selling price must be at least GHS ${this.rules.product.price.min}`);
+        }
+        if (product.price > this.rules.product.price.max) {
+            errors.push(`Selling price cannot exceed GHS ${this.rules.product.price.max}`);
+        }
+        
+        if (product.costPrice && product.costPrice < 0) {
+            errors.push('Cost price cannot be negative');
+        }
+        if (product.costPrice && product.costPrice > product.price) {
+            errors.push('Cost price cannot be higher than selling price (you would lose money)');
+        }
+        
+        if (!Number.isInteger(product.stock) || product.stock < 0) {
+            errors.push('Stock must be a non-negative integer');
+        }
+        
+        return { isValid: errors.length === 0, errors };
+    }
+
+    validateStaff(staff) {
+        const errors = [];
+        
+        if (!staff.name || staff.name.trim().length < this.rules.staff.name.min) {
+            errors.push(`Staff name must be at least ${this.rules.staff.name.min} characters`);
+        }
+        if (staff.name && !this.rules.staff.name.pattern.test(staff.name)) {
+            errors.push('Staff name can only contain letters, spaces, hyphens, and apostrophes');
+        }
+        
+        if (!staff.email || !this.rules.staff.email.pattern.test(staff.email)) {
+            errors.push('Please enter a valid email address (e.g., name@example.com)');
+        }
+        
+        if (!staff.pin || !this.rules.staff.pin.pattern.test(staff.pin)) {
+            errors.push('PIN must be exactly 4 digits (0-9)');
+        }
+        
+        if (!this.rules.staff.role.values.includes(staff.role)) {
+            errors.push(`Role must be one of: ${this.rules.staff.role.values.join(', ')}`);
+        }
+        
+        return { isValid: errors.length === 0, errors };
+    }
+
+    validateQuantity(product, requestedQty) {
+        const errors = [];
+        
+        if (!Number.isInteger(requestedQty) || requestedQty < 1) {
+            errors.push('Quantity must be a positive whole number');
+        }
+        
+        if (requestedQty > product.stock) {
+            errors.push(`Only ${product.stock} units available in stock`);
+        }
+        
+        if (product.stock === 0) {
+            errors.push(`${product.name} is out of stock`);
+        }
+        
+        return { isValid: errors.length === 0, errors };
+    }
+
+    sanitizeInput(input, type = 'string') {
+        if (type === 'string') {
+            return input ? input.trim().replace(/[<>]/g, '') : '';
+        }
+        if (type === 'number') {
+            const num = parseFloat(input);
+            return isNaN(num) ? 0 : Math.max(0, num);
+        }
+        if (type === 'integer') {
+            const num = parseInt(input);
+            return isNaN(num) ? 0 : Math.max(0, num);
+        }
+        return input;
+    }
+}
+
+// ==================== ERROR MONITORING SYSTEM (FIX #3) ====================
+
+class ErrorMonitor {
+    constructor() {
+        this.errors = [];
+        this.warnings = [];
+        this.maxErrors = 100;
+        this.errorCallbacks = [];
+        
+        window.addEventListener('error', (e) => this.captureError(e.error || e.message, 'global', e.filename, e.lineno));
+        window.addEventListener('unhandledrejection', (e) => this.captureError(e.reason, 'promise'));
+        
+        this.originalConsoleError = console.error;
+        console.error = (...args) => {
+            this.captureError(args.join(' '), 'console');
+            this.originalConsoleError.apply(console, args);
+        };
+    }
+
+    captureError(error, source = 'unknown', file = null, line = null) {
+        const errorEntry = {
+            id: Date.now() + '_' + Math.random(),
+            message: error?.message || error?.toString() || String(error),
+            source: source,
+            file: file,
+            line: line,
+            stack: error?.stack,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            shopId: 'none',
+            userId: 'anonymous'
+        };
+        
+        this.errors.unshift(errorEntry);
+        if (this.errors.length > this.maxErrors) this.errors.pop();
+        
+        this.showErrorNotification(errorEntry);
+        this.errorCallbacks.forEach(cb => cb(errorEntry));
+        
+        return errorEntry;
+    }
+
+    captureWarning(message, context = {}) {
+        const warningEntry = {
+            id: Date.now() + '_' + Math.random(),
+            message: message,
+            context: context,
+            timestamp: new Date().toISOString()
+        };
+        
+        this.warnings.unshift(warningEntry);
+        if (this.warnings.length > this.maxErrors) this.warnings.pop();
+        
+        return warningEntry;
+    }
+
+    showErrorNotification(error) {
+        const userFriendlyErrors = ['NetworkError', 'Failed to fetch', 'Permission denied', 'Invalid data'];
+        const shouldShow = userFriendlyErrors.some(e => error.message.includes(e));
+        
+        if (shouldShow) {
+            this.showToast(error.message, 'error');
+        }
+    }
+
+    showToast(message, type = 'error') {
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                pointer-events: none;
+            `;
+            document.body.appendChild(toastContainer);
+        }
+        
+        const toast = document.createElement('div');
+        const bgColor = type === 'error' ? 'var(--danger)' : (type === 'warning' ? 'var(--warning)' : 'var(--success)');
+        toast.style.cssText = `
+            background: ${bgColor};
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s ease;
+            pointer-events: auto;
+        `;
+        
+        toast.innerHTML = `
+            <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : (type === 'warning' ? 'fa-exclamation-triangle' : 'fa-check-circle')}"></i>
+            <span style="flex: 1;">${message}</span>
+            <i class="fas fa-times" style="cursor: pointer;" onclick="this.parentElement.remove()"></i>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentElement) toast.remove();
+        }, 5000);
+    }
+
+    getRecentErrors(limit = 20) {
+        return this.errors.slice(0, limit);
+    }
+
+    getErrorStats() {
+        const last24h = this.errors.filter(e => new Date(e.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000));
+        return {
+            total: this.errors.length,
+            last24h: last24h.length,
+            bySource: this.errors.reduce((acc, e) => {
+                acc[e.source] = (acc[e.source] || 0) + 1;
+                return acc;
+            }, {})
+        };
+    }
+
+    onError(callback) {
+        this.errorCallbacks.push(callback);
+    }
+}
+
+// ==================== INPUT VALIDATION HELPERS ====================
+
+function validateAndShowError(element, isValid, errorMessage) {
+    const formGroup = element.closest('.form-group');
+    if (!isValid) {
+        formGroup?.classList.add('error');
+        let errorDiv = formGroup?.querySelector('.error-message');
+        if (!errorDiv && formGroup) {
+            errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            formGroup.appendChild(errorDiv);
+        }
+        if (errorDiv) errorDiv.textContent = errorMessage;
+        return false;
+    } else {
+        formGroup?.classList.remove('error');
+        const errorDiv = formGroup?.querySelector('.error-message');
+        if (errorDiv) errorDiv.textContent = '';
+        return true;
+    }
+}
+
+// Real-time validation for product form
+function setupProductValidation() {
+    const productName = document.getElementById('productName');
+    const productPrice = document.getElementById('productPrice');
+    const productCostPrice = document.getElementById('productCostPrice');
+    const productStock = document.getElementById('productStock');
+    
+    if (productName) {
+        productName.addEventListener('input', () => {
+            const isValid = productName.value.trim().length >= 2 && productName.value.trim().length <= 100;
+            validateAndShowError(productName, isValid, 'Product name must be 2-100 characters');
+        });
+    }
+    
+    if (productPrice) {
+        productPrice.addEventListener('input', () => {
+            const price = parseFloat(productPrice.value);
+            const isValid = !isNaN(price) && price >= 0.01 && price <= 999999.99;
+            validateAndShowError(productPrice, isValid, 'Price must be between GHS 0.01 and GHS 999,999.99');
+        });
+    }
+    
+    if (productCostPrice) {
+        productCostPrice.addEventListener('input', () => {
+            const costPrice = parseFloat(productCostPrice.value);
+            const sellingPrice = parseFloat(document.getElementById('productPrice')?.value || 0);
+            const isValid = !isNaN(costPrice) && costPrice >= 0 && costPrice <= sellingPrice;
+            validateAndShowError(productCostPrice, isValid, 'Cost price cannot exceed selling price');
+        });
+    }
+    
+    if (productStock) {
+        productStock.addEventListener('input', () => {
+            const stock = parseInt(productStock.value);
+            const isValid = !isNaN(stock) && Number.isInteger(stock) && stock >= 0 && stock <= 999999;
+            validateAndShowError(productStock, isValid, 'Stock must be a positive whole number');
+        });
+    }
+}
+
+// Real-time validation for staff form
+function setupStaffValidation() {
+    const staffName = document.getElementById('staffName');
+    const staffEmail = document.getElementById('staffEmail');
+    const staffPin = document.getElementById('staffPin');
+    
+    if (staffName) {
+        staffName.addEventListener('input', () => {
+            const isValid = /^[a-zA-Z\s\-']+$/.test(staffName.value.trim()) && staffName.value.trim().length >= 2;
+            validateAndShowError(staffName, isValid, 'Name must contain only letters, spaces, hyphens, and apostrophes');
+        });
+    }
+    
+    if (staffEmail) {
+        staffEmail.addEventListener('input', () => {
+            const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staffEmail.value);
+            validateAndShowError(staffEmail, isValid, 'Please enter a valid email address');
+        });
+    }
+    
+    if (staffPin) {
+        staffPin.addEventListener('input', () => {
+            const isValid = /^\d{4}$/.test(staffPin.value);
+            validateAndShowError(staffPin, isValid, 'PIN must be exactly 4 digits');
+        });
+    }
+}
+
+// ==================== ENHANCED DATA OPERATIONS WITH VALIDATION ====================
+
+// Override add product function with validation
+const originalAddSingleProduct = addSingleProduct;
+addSingleProduct = function() {
+    try {
+        const name = document.getElementById('productName').value.trim();
+        const category = document.getElementById('productCategory').value.trim();
+        const costPrice = parseFloat(document.getElementById('productCostPrice').value) || 0;
+        const price = parseFloat(document.getElementById('productPrice').value);
+        const stock = parseInt(document.getElementById('productStock').value) || 0;
+        const minStock = parseInt(document.getElementById('productMinStock').value) || 10;
+        
+        const validator = new DataValidator();
+        const validation = validator.validateProduct({
+            name, category, costPrice, price, stock, minStock
+        });
+        
+        if (!validation.isValid) {
+            errorMonitor.showToast(validation.errors[0], 'error');
+            return;
+        }
+        
+        if (price < costPrice) {
+            errorMonitor.showToast('Warning: Selling price is less than cost price. You will lose money on each sale!', 'warning');
+        }
+        
+        const duplicate = currentShop.inventory.some(p => 
+            p.name.toLowerCase() === name.toLowerCase() && 
+            p.category.toLowerCase() === category.toLowerCase()
+        );
+        
+        if (duplicate) {
+            errorMonitor.showToast(`A product named "${name}" already exists in category "${category}"`, 'error');
+            return;
+        }
+        
+        originalAddSingleProduct();
+        errorMonitor.showToast('Product added successfully!', 'success');
+        
+    } catch (error) {
+        errorMonitor.captureError(error, 'addProduct');
+        errorMonitor.showToast('Failed to add product. Please try again.', 'error');
+    }
+};
+
+// Override update product with validation
+const originalUpdateProduct = updateProduct;
+updateProduct = function() {
+    try {
+        const id = parseInt(document.getElementById('editProductId').value);
+        const name = document.getElementById('editProductName').value.trim();
+        const category = document.getElementById('editProductCategory').value.trim();
+        const costPrice = parseFloat(document.getElementById('editProductCostPrice').value) || 0;
+        const price = parseFloat(document.getElementById('editProductPrice').value);
+        const stock = parseInt(document.getElementById('editProductStock').value) || 0;
+        const minStock = parseInt(document.getElementById('editProductMinStock').value) || 10;
+        
+        const validator = new DataValidator();
+        const validation = validator.validateProduct({
+            name, category, costPrice, price, stock, minStock
+        });
+        
+        if (!validation.isValid) {
+            errorMonitor.showToast(validation.errors[0], 'error');
+            return;
+        }
+        
+        originalUpdateProduct();
+        errorMonitor.showToast('Product updated successfully!', 'success');
+        
+    } catch (error) {
+        errorMonitor.captureError(error, 'updateProduct');
+        errorMonitor.showToast('Failed to update product', 'error');
+    }
+};
+
+// Enhanced add to cart with validation
+const originalAddToCart = addToCart;
+addToCart = function(item) {
+    try {
+        const validator = new DataValidator();
+        const validation = validator.validateQuantity(item, 1);
+        
+        if (!validation.isValid) {
+            errorMonitor.showToast(validation.errors[0], 'error');
+            return;
+        }
+        
+        originalAddToCart(item);
+        
+    } catch (error) {
+        errorMonitor.captureError(error, 'addToCart');
+    }
+};
+
+// Enhanced staff addition with validation
+const originalAddNewStaff = addNewStaff;
+addNewStaff = function() {
+    try {
+        const name = document.getElementById('staffName').value.trim();
+        const email = document.getElementById('staffEmail').value.trim();
+        const pin = document.getElementById('staffPin').value.trim();
+        const businessId = document.getElementById('staffBusiness').value;
+        const role = document.getElementById('staffRole').value;
+        
+        const validator = new DataValidator();
+        const validation = validator.validateStaff({ name, email, pin, role });
+        
+        if (!validation.isValid) {
+            errorMonitor.showToast(validation.errors[0], 'error');
+            return;
+        }
+        
+        originalAddNewStaff();
+        
+    } catch (error) {
+        errorMonitor.captureError(error, 'addStaff');
+        errorMonitor.showToast('Failed to add staff member', 'error');
+    }
+};
+
+// ==================== ERROR MONITORING DASHBOARD ====================
+
+function showErrorDashboard() {
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'supervisor')) {
+        errorMonitor.showToast('Only administrators can view error logs', 'error');
+        return;
+    }
+    
+    const stats = errorMonitor.getErrorStats();
+    const recentErrors = errorMonitor.getRecentErrors(10);
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'errorDashboardModal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-close" onclick="this.closest('.modal').remove()">
+                <i class="fas fa-times"></i>
+            </div>
+            <h2 style="margin-bottom: 24px;">🔍 Error Monitoring Dashboard</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                <div class="stat-card" style="text-align: center;">
+                    <div class="stat-header">Total Errors</div>
+                    <div class="stat-value" style="color: var(--danger);">${stats.total}</div>
+                </div>
+                <div class="stat-card" style="text-align: center;">
+                    <div class="stat-header">Last 24 Hours</div>
+                    <div class="stat-value">${stats.last24h}</div>
+                </div>
+                <div class="stat-card" style="text-align: center;">
+                    <div class="stat-header">Error Sources</div>
+                    <div class="stat-value" style="font-size: 20px;">${Object.keys(stats.bySource).length}</div>
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <h2>Recent Errors</h2>
+                <button class="btn btn-secondary" onclick="clearErrorLogs()">Clear Logs</button>
+            </div>
+            
+            <div style="max-height: 400px; overflow-y: auto;">
+                ${recentErrors.length === 0 ? '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No errors recorded</div>' :
+                    recentErrors.map(error => `
+                        <div style="background: var(--bg-tertiary); border-radius: 12px; padding: 16px; margin-bottom: 12px; border-left: 4px solid var(--danger);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--danger); font-weight: 600;">${error.source.toUpperCase()}</span>
+                                <span style="color: var(--text-secondary); font-size: 12px;">${new Date(error.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div style="margin-bottom: 8px;">${error.message}</div>
+                            ${error.file ? `<div style="color: var(--text-secondary); font-size: 11px;">${error.file}${error.line ? `:${error.line}` : ''}</div>` : ''}
+                            ${error.userId !== 'anonymous' ? `<div style="color: var(--text-secondary); font-size: 11px;">User: ${error.userId}</div>` : ''}
+                        </div>
+                    `).join('')
+                }
+            </div>
+            
+            <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
+                <button class="btn btn-primary" onclick="this.closest('.modal').remove()">Close</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function clearErrorLogs() {
+    if (confirm('Are you sure you want to clear all error logs?')) {
+        errorMonitor.errors = [];
+        errorMonitor.showToast('Error logs cleared', 'success');
+        document.getElementById('errorDashboardModal')?.remove();
+    }
+}
+
+// ==================== NETWORK HEALTH MONITORING ====================
+
+function monitorNetworkHealth() {
+    let connectionIssues = 0;
+    
+    setInterval(async () => {
+        if (!navigator.onLine) return;
+        
+        try {
+            const start = Date.now();
+            await db.ref('.info/connected').once('value');
+            const latency = Date.now() - start;
+            
+            if (latency > 3000) {
+                connectionIssues++;
+                if (connectionIssues > 3) {
+                    errorMonitor.captureWarning('High network latency detected', { latency });
+                    errorMonitor.showToast('Network connection is slow. Some features may be delayed.', 'warning');
+                }
+            } else {
+                connectionIssues = Math.max(0, connectionIssues - 1);
+            }
+            
+        } catch (error) {
+            connectionIssues++;
+            errorMonitor.captureError(error, 'network');
+        }
+    }, 30000);
+}
+
+// ==================== DATA INTEGRITY CHECKS ====================
+
+async function validateDataIntegrity() {
+    if (!currentShop) return;
+    
+    const issues = [];
+    
+    const negativeStock = currentShop.inventory.filter(p => p.stock < 0);
+    if (negativeStock.length > 0) {
+        issues.push(`${negativeStock.length} products have negative stock`);
+        negativeStock.forEach(p => {
+            errorMonitor.captureWarning(`Negative stock detected`, { product: p.name, stock: p.stock });
+        });
+    }
+    
+    const invalidPrices = currentShop.inventory.filter(p => p.price <= 0);
+    if (invalidPrices.length > 0) {
+        issues.push(`${invalidPrices.length} products have invalid prices`);
+    }
+    
+    const unprofitable = currentShop.inventory.filter(p => p.costPrice > p.price);
+    if (unprofitable.length > 0) {
+        errorMonitor.captureWarning(`Unprofitable products detected`, { count: unprofitable.length });
+    }
+    
+    if (issues.length > 0) {
+        errorMonitor.showToast(`Data integrity issues found: ${issues[0]}`, 'warning');
+    }
+    
+    return issues;
+}
+
+// ==================== PERFORMANCE MONITORING ====================
+
+class PerformanceMonitor {
+    constructor() {
+        this.metrics = {};
+        this.startTime = performance.now();
+    }
+    
+    startOperation(name) {
+        this.metrics[name] = { start: performance.now() };
+    }
+    
+    endOperation(name) {
+        if (this.metrics[name]) {
+            const duration = performance.now() - this.metrics[name].start;
+            this.metrics[name].duration = duration;
+            
+            if (duration > 1000) {
+                errorMonitor.captureWarning(`Slow operation: ${name} took ${duration.toFixed(0)}ms`, { duration });
+            }
+            
+            return duration;
+        }
+        return null;
+    }
+    
+    getAverageLoadTime() {
+        const ops = Object.values(this.metrics).filter(m => m.duration);
+        if (ops.length === 0) return 0;
+        return ops.reduce((sum, m) => sum + m.duration, 0) / ops.length;
+    }
+}
+
+const performanceMonitor = new PerformanceMonitor();
+
+// ==================== INITIALIZE MONITORING ====================
+
+const dataValidator = new DataValidator();
+const errorMonitor = new ErrorMonitor();
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupProductValidation();
+    setupStaffValidation();
+    monitorNetworkHealth();
+    
+    const settingsHeader = document.querySelector('.settings-section:first-child');
+    if (settingsHeader) {
+        const dashboardBtn = document.createElement('button');
+        dashboardBtn.innerHTML = '<i class="fas fa-chart-line"></i> Error Dashboard';
+        dashboardBtn.className = 'btn btn-secondary';
+        dashboardBtn.style.marginLeft = '12px';
+        dashboardBtn.onclick = showErrorDashboard;
+        settingsHeader.querySelector('.settings-section-title')?.appendChild(dashboardBtn);
+    }
+    
+    setInterval(() => validateDataIntegrity(), 60 * 60 * 1000);
+});
+
+// Export monitoring tools for debugging
+window.debug = {
+    showErrors: () => showErrorDashboard(),
+    clearErrors: () => clearErrorLogs(),
+    getStats: () => errorMonitor.getErrorStats(),
+    validateData: () => validateDataIntegrity(),
+    performance: () => console.table(performanceMonitor.metrics)
+};
 
         // ==================== STATE MANAGEMENT ====================
         let currentUser = null;
@@ -3334,6 +4157,8 @@
         let pendingShopId = null;
         let auditRecords = [];
         let transactions = [];
+        let customers = [];
+        let returns = [];
 
         // Theme settings
         let themeSettings = {
@@ -3364,10 +4189,10 @@
             settings: false
         };
 
-        // Paystack configuration
+        // Paystack configuration (FIX #2 - works with any key)
         const PAYSTACK_PUBLIC_KEY = 'pk_test_cfd2f3845a3448a0744254dcbeec6afcd9217306';
 
-        // ==================== NEW: OFFLINE SYNC SYSTEM ====================
+        // ==================== NEW: OFFLINE SYNC SYSTEM (FIX #9) ====================
         let isOnline = navigator.onLine;
         let pendingOperations = [];
         let syncInProgress = false;
@@ -3427,6 +4252,7 @@
         }
 
         async function executeOperation(op) {
+            if (!firebaseAvailable) return;
             switch(op.operation) {
                 case 'add_sale': await db.ref(`reports/${op.data.shopId}/${op.data.date}/sales`).push(op.data.sale); break;
                 case 'update_inventory': await db.ref(`shops/${op.data.shopId}/inventory`).set(op.data.inventory); break;
@@ -3500,18 +4326,23 @@
             if (document.getElementById('kpiProfitMargin')) document.getElementById('kpiProfitMargin').textContent = `${profitMargin}%`;
         }
 
-        // ==================== NEW: PDF EXPORT ====================
+        // ==================== NEW: PDF EXPORT (FIX #8) ====================
         async function exportToPDF() {
             const element = document.getElementById('reportContent');
             if (!element) return;
-            const { jsPDF } = window.jspdf;
-            const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0a0b0e' });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 190;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 10, 0, imgWidth, imgHeight);
-            pdf.save(`${currentShop?.name}_report_${moment().format('YYYY-MM-DD')}.pdf`);
+            try {
+                const { jsPDF } = window.jspdf;
+                const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0a0b0e' });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 10, 0, imgWidth, imgHeight);
+                pdf.save(`${currentShop?.name}_report_${moment().format('YYYY-MM-DD')}.pdf`);
+                errorMonitor.showToast('PDF exported successfully!', 'success');
+            } catch(e) {
+                errorMonitor.showToast('PDF export failed', 'error');
+            }
         }
 
         // ==================== NEW: BACKUP SYSTEM ====================
@@ -3553,7 +4384,7 @@
             }
             document.getElementById('lastBackupTime').value = new Date().toLocaleString();
             URL.revokeObjectURL(backupUrl);
-            alert('Backup completed successfully!');
+            errorMonitor.showToast('Backup completed successfully!', 'success');
         }
 
         async function backupToGoogleDrive(blob) {
@@ -3642,7 +4473,7 @@
             });
         }
 
-        // ==================== AUTHENTICATION & NAVIGATION ====================
+        // ==================== AUTHENTICATION & NAVIGATION (FIX #7) ====================
         function handleLogout() {
             currentUser = null;
             currentShop = null;
@@ -3660,23 +4491,40 @@
         function updateNavigation() {
             const navItems = document.querySelectorAll('.nav-item');
             const isAdmin = currentUser && (currentUser.role === 'admin');
+            const isSupervisor = currentUser && (currentUser.role === 'supervisor');
             const permissions = currentUser ? currentUser.permissions : null;
+            
             navItems.forEach(item => {
                 const tab = item.getAttribute('data-tab');
-                if (isAdmin) item.style.display = 'flex';
-                else if (permissions) {
+                if (isAdmin) {
+                    item.style.display = 'flex';
+                } else if (isSupervisor) {
+                    switch(tab) {
+                        case 'overview': item.style.display = permissions?.overview ? 'flex' : 'none'; break;
+                        case 'pos': item.style.display = permissions?.pos ? 'flex' : 'none'; break;
+                        case 'inventory': item.style.display = permissions?.inventory ? 'flex' : 'none'; break;
+                        case 'reports': item.style.display = 'none'; break;
+                        case 'audit': item.style.display = permissions?.audit ? 'flex' : 'none'; break;
+                        case 'staff': item.style.display = 'none'; break;
+                        case 'settings': item.style.display = 'none'; break;
+                        default: item.style.display = 'none';
+                    }
+                } else if (permissions) {
                     switch(tab) {
                         case 'overview': item.style.display = permissions.overview ? 'flex' : 'none'; break;
                         case 'pos': item.style.display = permissions.pos ? 'flex' : 'none'; break;
-                        case 'inventory': item.style.display = permissions.inventory ? 'flex' : 'none'; break;
-                        case 'reports': item.style.display = permissions.reports ? 'flex' : 'none'; break;
-                        case 'audit': item.style.display = permissions.audit ? 'flex' : 'none'; break;
-                        case 'staff': item.style.display = permissions.staff ? 'flex' : 'none'; break;
-                        case 'settings': item.style.display = permissions.settings ? 'flex' : 'none'; break;
+                        case 'inventory': item.style.display = 'none'; break;
+                        case 'reports': item.style.display = 'none'; break;
+                        case 'audit': item.style.display = 'none'; break;
+                        case 'staff': item.style.display = 'none'; break;
+                        case 'settings': item.style.display = 'none'; break;
                         default: item.style.display = 'none';
                     }
-                } else item.style.display = 'none';
+                } else {
+                    item.style.display = 'none';
+                }
             });
+            
             navItems.forEach(item => item.classList.remove('active'));
         }
 
@@ -3778,6 +4626,7 @@
             cart = [];
             renderShopList();
             renderMainContent();
+                        loadCustomers();
         }
 
         // ==================== SHOP FUNCTIONS ====================
@@ -4054,21 +4903,32 @@
             });
         }
 
-        function editProduct(productId) {
-            const product = currentShop.inventory.find(p => p.id === productId);
+               function editProduct(productId) {
+            if (!currentShop) {
+                errorMonitor.showToast('No business selected', 'error');
+                return;
+            }
+            
+            // Make sure productId is treated as number
+            const id = typeof productId === 'string' ? parseInt(productId) : productId;
+            const product = currentShop.inventory.find(p => p.id === id);
+            
             if (product) {
                 document.getElementById('editProductId').value = product.id;
                 document.getElementById('editProductName').value = product.name;
-                document.getElementById('editProductCategory').value = product.category;
+                document.getElementById('editProductCategory').value = product.category || '';
                 document.getElementById('editProductCostPrice').value = product.costPrice || 0;
                 document.getElementById('editProductPrice').value = product.price;
                 document.getElementById('editProductStock').value = product.stock;
-                document.getElementById('editProductMinStock').value = product.minStock;
+                document.getElementById('editProductMinStock').value = product.minStock || 10;
                 document.getElementById('editProductModal').classList.add('active');
+            } else {
+                errorMonitor.showToast('Product not found in current business. Please refresh the page.', 'error');
+                errorMonitor.captureWarning('Product not found', { productId, shopId: currentShop?.id, shopName: currentShop?.name });
             }
         }
 
-        function updateProduct() {
+                function updateProduct() {
             const id = parseInt(document.getElementById('editProductId').value);
             const name = document.getElementById('editProductName').value.trim();
             const category = document.getElementById('editProductCategory').value.trim();
@@ -4076,18 +4936,49 @@
             const price = parseFloat(document.getElementById('editProductPrice').value);
             const stock = parseInt(document.getElementById('editProductStock').value) || 0;
             const minStock = parseInt(document.getElementById('editProductMinStock').value) || 10;
-            if (!name) { alert('Product name is required'); return; }
-            if (!category) { alert('Please enter a category'); return; }
-            if (price <= 0) { alert('Please enter a valid selling price'); return; }
-            const product = currentShop.inventory.find(p => p.id === id);
-            if (product) {
-                product.name = name; product.category = category; product.costPrice = costPrice;
-                product.price = price; product.stock = stock; product.minStock = minStock;
-                db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory).then(() => {
+            
+            if (!name) {
+                errorMonitor.showToast('Product name is required', 'error');
+                return;
+            }
+            if (!category) {
+                errorMonitor.showToast('Please enter a category', 'error');
+                return;
+            }
+            if (isNaN(price) || price <= 0) {
+                errorMonitor.showToast('Please enter a valid selling price', 'error');
+                return;
+            }
+            if (isNaN(stock) || stock < 0) {
+                errorMonitor.showToast('Please enter a valid stock quantity', 'error');
+                return;
+            }
+            
+            // Find the product by ID - ensure we're using the current shop's inventory
+            const productIndex = currentShop.inventory.findIndex(p => p.id === id);
+            
+            if (productIndex !== -1) {
+                // Update the product properties
+                currentShop.inventory[productIndex].name = name;
+                currentShop.inventory[productIndex].category = category;
+                currentShop.inventory[productIndex].costPrice = costPrice;
+                currentShop.inventory[productIndex].price = price;
+                currentShop.inventory[productIndex].stock = stock;
+                currentShop.inventory[productIndex].minStock = minStock;
+                
+                // Save to Firebase for the correct shop
+                const shopRef = db.ref(`${currentShopPath}/inventory`);
+                shopRef.set(currentShop.inventory).then(() => {
                     closeModal('editProductModal');
                     refreshInventory();
-                    alert('Product updated successfully!');
+                    errorMonitor.showToast('✅ Product updated successfully!', 'success');
+                }).catch((error) => {
+                    console.error('Error updating product:', error);
+                    errorMonitor.showToast('Error updating product. Please check your connection.', 'error');
+                    errorMonitor.captureError(error, 'updateProduct');
                 });
+            } else {
+                errorMonitor.showToast('Product not found. Please refresh and try again.', 'error');
             }
         }
 
@@ -4184,7 +5075,6 @@
             if (currentTab === 'pos') renderMainContent();
         }
 
-        // NEW: Update cart item quantity with buttons
         function updateCartItemQuantity(index, delta) {
             if (cart[index]) {
                 const newQty = cart[index].quantity + delta;
@@ -4214,7 +5104,7 @@
         function selectPayment(method) {
             selectedPaymentMethod = method;
             document.querySelectorAll('.payment-method').forEach(el => el.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
         }
 
         function updateTotalWithDiscount() {
@@ -4251,60 +5141,147 @@
             }
         }
 
+        // FIX #2: Paystack with better error handling
         function processPaystackPayment(amount) {
+            if (typeof PaystackPop === 'undefined') {
+                alert('Paystack is not loaded. Using cash fallback.');
+                processSuccessfulPayment({
+                    reference: 'CASH_FALLBACK_' + Date.now(),
+                    amount: amount,
+                    paymentMethod: 'Cash (Paystack Fallback)',
+                    transactionId: 'FALLBACK_' + Math.random().toString(36).substr(2, 9)
+                });
+                return;
+            }
+            
             document.getElementById('paystackProcessing').classList.add('active');
-            const shopEmail = 'shop@poshub.com';
+            const shopEmail = currentShop?.email || 'shop@poshub.com';
             const reference = 'POS_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
             const amountInPesewas = Math.round(amount * 100);
-            const handler = PaystackPop.setup({
-                key: PAYSTACK_PUBLIC_KEY, email: shopEmail, amount: amountInPesewas,
-                currency: 'GHS', ref: reference,
-                metadata: { shop_name: currentShop.name, cart_items: cart.map(item => ({ name: item.name, quantity: item.quantity, price: item.price })) },
-                callback: function(response) {
-                    document.getElementById('paystackProcessing').classList.remove('active');
-                    processSuccessfulPayment({
-                        reference: response.reference, amount: amount, paymentMethod: 'Mobile Money (Paystack)', transactionId: response.transaction
-                    });
-                },
-                onClose: function() {
-                    document.getElementById('paystackProcessing').classList.remove('active');
-                    alert('Mobile Money payment cancelled');
-                }
-            });
-            handler.openIframe();
+            
+            try {
+                const handler = PaystackPop.setup({
+                    key: PAYSTACK_PUBLIC_KEY, 
+                    email: shopEmail, 
+                    amount: amountInPesewas,
+                    currency: 'GHS', 
+                    ref: reference,
+                    metadata: { shop_name: currentShop.name, cart_items: cart.map(item => ({ name: item.name, quantity: item.quantity, price: item.price })) },
+                    callback: function(response) {
+                        document.getElementById('paystackProcessing').classList.remove('active');
+                        processSuccessfulPayment({
+                            reference: response.reference, 
+                            amount: amount, 
+                            paymentMethod: 'Mobile Money (Paystack)', 
+                            transactionId: response.transaction
+                        });
+                    },
+                    onClose: function() {
+                        document.getElementById('paystackProcessing').classList.remove('active');
+                        alert('Mobile Money payment cancelled');
+                    }
+                });
+                handler.openIframe();
+            } catch(e) {
+                document.getElementById('paystackProcessing').classList.remove('active');
+                errorMonitor.showToast('Paystack error: ' + e.message, 'error');
+                alert('Payment processor error. Please use Cash payment.');
+            }
         }
 
-        function processSuccessfulPayment(paymentDetails) {
+                function processSuccessfulPayment(paymentDetails) {
+            // Get selected customer from POS dropdown
+            let selectedCustomerId = null;
+            let selectedCustomer = null;
+            
+            try {
+                const customerSelect = document.getElementById('posCustomerSelect');
+                if (customerSelect) {
+                    selectedCustomerId = customerSelect.value;
+                    if (selectedCustomerId && selectedCustomerId !== "") {
+                        selectedCustomer = customers.find(c => c.id == selectedCustomerId);
+                        console.log("Selected customer ID:", selectedCustomerId);
+                        console.log("Selected customer:", selectedCustomer);
+                    }
+                }
+            } catch(e) {
+                console.error("Error getting customer:", e);
+            }
+            
+            // Update stock
             cart.forEach(item => {
                 const product = currentShop.inventory.find(p => p.id === item.id);
                 if (product) product.stock -= item.quantity;
             });
             db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory);
+            
             const today = new Date().toISOString().split('T')[0];
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
             const dateTimeStr = now.toLocaleString();
             const profit = cart.reduce((sum, item) => sum + ((item.price - (item.costPrice || 0)) * item.quantity), 0);
+            
             const saleRecord = {
-                staff: currentUser ? currentUser.name : 'Unknown', total: paymentDetails.amount.toFixed(2), profit: profit.toFixed(2),
-                paymentMethod: paymentDetails.paymentMethod, itemDetails: cart.map(item => ({ name: item.name, qty: item.quantity, price: item.price })),
-                time: timeStr, datetime: dateTimeStr
+                staff: currentUser ? currentUser.name : 'Unknown',
+                total: paymentDetails.amount.toFixed(2),
+                profit: profit.toFixed(2),
+                paymentMethod: paymentDetails.paymentMethod,
+                itemDetails: cart.map(item => ({ name: item.name, qty: item.quantity, price: item.price })),
+                time: timeStr,
+                datetime: dateTimeStr,
+                customerId: selectedCustomerId || null,
+                customerName: selectedCustomer ? selectedCustomer.name : 'Walk-in Customer'
             };
+            
             db.ref(`reports/${currentShop.id}/${today}/sales`).push(saleRecord).then(() => {
                 currentShop.revenue += paymentDetails.amount;
                 currentShop.transactions += 1;
+                
+                // Create transaction with customer ID
                 const newTransaction = {
-                    id: paymentDetails.reference.substring(0, 8), date: dateTimeStr, customer: 'Walk-in Customer',
-                    items: cart.length, total: paymentDetails.amount,
-                    paymentMethod: paymentDetails.paymentMethod.includes('Mobile') ? 'Mobile Money' : 'Cash', status: 'completed'
+                    id: paymentDetails.reference.substring(0, 8),
+                    date: dateTimeStr,
+                    customer: selectedCustomer ? selectedCustomer.name : 'Walk-in Customer',
+                    customerId: selectedCustomerId || null,
+                    items: cart.length,
+                    total: paymentDetails.amount,
+                    paymentMethod: paymentDetails.paymentMethod.includes('Mobile') ? 'Mobile Money' : 'Cash',
+                    status: 'completed'
                 };
+                
+                console.log("Saving transaction with customerId:", newTransaction.customerId);
                 transactions.unshift(newTransaction);
+                
+                // Update customer total spent
+                if (selectedCustomerId && selectedCustomerId !== "") {
+                    const customerIndex = customers.findIndex(c => c.id == selectedCustomerId);
+                    if (customerIndex !== -1) {
+                        customers[customerIndex].totalSpent = (customers[customerIndex].totalSpent || 0) + paymentDetails.amount;
+                        localStorage.setItem(`pos_customers_${currentShop.id}`, JSON.stringify(customers));
+                        console.log("Customer total spent updated to:", customers[customerIndex].totalSpent);
+                    }
+                }
+                
+                // Clear cart
                 cart = [];
+                
                 alert(`Payment successful!\n\nTransaction Reference: ${paymentDetails.reference}\nAmount: GHS ${paymentDetails.amount.toFixed(2)}\nPayment Method: ${paymentDetails.paymentMethod}`);
+                
                 if (currentTab === 'pos') renderMainContent();
                 else if (currentTab === 'reports') renderMainContent();
             });
         }
+                                 // Update customer total spent
+                if (selectedCustomerId) {
+                    const customerIndex = customers.findIndex(c => c.id == selectedCustomerId);
+                    if (customerIndex !== -1) {
+                        customers[customerIndex].totalSpent = (customers[customerIndex].totalSpent || 0) + paymentDetails.amount;
+                        localStorage.setItem(`pos_customers_${currentShop.id}`, JSON.stringify(customers));
+                        console.log("Customer total spent updated:", customers[customerIndex].totalSpent);
+                    }
+                }
+                
+                console.log("Transaction saved with customer:", selectedCustomerId, selectedCustomer?.name);
 
         // ==================== AUDIT FUNCTIONS ====================
         function showStartAuditModal() {
@@ -4350,7 +5327,8 @@
                 }
                 return sum;
             }, 0);
-            document.getElementById('totalLossAmount').textContent = `GHS ${totalLoss.toFixed(2)}`;
+            const lossElement = document.getElementById('totalLossAmount');
+            if (lossElement) lossElement.textContent = `GHS ${totalLoss.toFixed(2)}`;
         }
 
         function saveAudit() {
@@ -4523,6 +5501,7 @@
                 a.download = `audit_${auditDate}_${audit.time.replace(/:/g, '-')}.csv`;
                 a.click();
                 window.URL.revokeObjectURL(url);
+                errorMonitor.showToast('Audit report exported!', 'success');
             });
         }
 
@@ -4610,7 +5589,7 @@
         function changeReportPeriod(period) {
             currentReportPeriod = period;
             document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
             let labels = [], data = [];
             if (period === 'daily') { labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; data = [12500, 14800, 13200, 16400, 18900, 21200, 19800]; }
             else if (period === 'weekly') { labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4']; data = [78500, 82300, 79800, 85600]; }
@@ -4631,47 +5610,99 @@
             a.download = `${currentShop.name}_sales_report_${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
+            errorMonitor.showToast('Report exported!', 'success');
         }
 
-        function filterTransactions() {
+                function filterTransactions() {
             const searchTerm = document.getElementById('transactionSearch')?.value.toLowerCase() || '';
             const paymentMethod = document.getElementById('paymentFilter')?.value || '';
+            
             const filteredTransactions = transactions.filter(t => {
-                const matchesSearch = t.id.toLowerCase().includes(searchTerm) || t.customer.toLowerCase().includes(searchTerm);
+                const matchesSearch = t.id.toLowerCase().includes(searchTerm) || 
+                                     (t.customer && t.customer.toLowerCase().includes(searchTerm));
                 const matchesPayment = !paymentMethod || t.paymentMethod === paymentMethod;
                 return matchesSearch && matchesPayment;
             });
+            
             const tbody = document.querySelector('#transactionsTable tbody');
             if (tbody) {
-                tbody.innerHTML = filteredTransactions.map(t => `
-                    <tr>
-                        <td><span style="font-family: monospace;">${t.id}</span></td>
-                        <td>${t.date}</td>
-                        <td>${t.customer}</td>
-                        <td>${t.items} items</td>
-                        <td><strong>GHS ${t.total.toFixed(2)}</strong></td>
-                        <td><span class="payment-badge"><i class="fas ${t.paymentMethod === 'Mobile Money' ? 'fa-mobile-alt' : 'fa-money-bill-wave'}"></i> ${t.paymentMethod}</span></td>
-                        <td><span class="transaction-status status-success"><i class="fas fa-check-circle"></i> Completed</span></td>
-                    </tr>
-                `).join('');
+                if (filteredTransactions.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">No transactions found</td></tr>`;
+                } else {
+                    tbody.innerHTML = filteredTransactions.map(t => `
+                        <tr>
+                            <td><span style="font-family: monospace;">${t.id}</span></td>
+                            <td>${t.date}</div></td>
+                            <td>${t.customer || 'Walk-in'}</div></td>
+                            <td>${t.items} items</div></td>
+                            <td><strong>GHS ${t.total.toFixed(2)}</strong></div></td>
+                            <td><span class="payment-badge"><i class="fas ${t.paymentMethod === 'Mobile Money' ? 'fa-mobile-alt' : 'fa-money-bill-wave'}"></i> ${t.paymentMethod}</span></div></td>
+                            <td><span class="transaction-status status-success"><i class="fas fa-check-circle"></i> Completed</span></div></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }        
+                function filterTransactionsByCustomer() {
+            const customerId = document.getElementById('customerFilter')?.value;
+            console.log("Filtering by customer ID:", customerId);
+            
+            if (!customerId || customerId === "") {
+                filterTransactions();
+                return;
+            }
+            
+            const filtered = transactions.filter(t => {
+                console.log("Transaction customerId:", t.customerId, "Comparing with:", customerId);
+                return t.customerId == customerId;
+            });
+            
+            console.log("Found filtered transactions:", filtered.length);
+            
+            const tbody = document.querySelector('#transactionsTable tbody');
+            if (tbody) {
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">No transactions found for this customer</td></tr>`;
+                } else {
+                    tbody.innerHTML = filtered.map(t => `
+                        <tr>
+                            <td><span style="font-family: monospace;">${t.id}</span></td>
+                            <td>${t.date}</div></td>
+                            <td>${t.customer || 'Walk-in'}</div></td>
+                            <td>${t.items} items</div></td>
+                            <td><strong>GHS ${t.total.toFixed(2)}</strong></div></td>
+                            <td><span class="payment-badge"><i class="fas ${t.paymentMethod === 'Mobile Money' ? 'fa-mobile-alt' : 'fa-money-bill-wave'}"></i> ${t.paymentMethod}</span></div></td>
+                            <td><span class="transaction-status status-success"><i class="fas fa-check-circle"></i> Completed</span></div></td>
+                        </tr>
+                    `).join('');
+                }
             }
         }
 
-        function showAllTransactions() {
+                function showAllTransactions() {
             const tbody = document.getElementById('transactionsTableBody');
+            if (!tbody) {
+                console.error("transactionsTableBody element not found");
+                return;
+            }
+            
             tbody.innerHTML = transactions.map(t => `
                 <tr>
                     <td><span style="font-family: monospace;">${t.id}</span></td>
-                    <td>${t.date}</td>
-                    <td>${t.customer}</td>
-                    <td>${t.items} items</td>
-                    <td><strong>GHS ${t.total.toFixed(2)}</strong></td>
-                    <td><span class="payment-badge"><i class="fas ${t.paymentMethod === 'Mobile Money' ? 'fa-mobile-alt' : 'fa-money-bill-wave'}"></i> ${t.paymentMethod}</span></td>
-                    <td><span class="transaction-status status-success"><i class="fas fa-check-circle"></i> Completed</span></td>
+                    <td>${t.date}</div></td>
+                    <td>${t.customer || 'Walk-in'}</div></td>
+                    <td>${t.items} items</div></td>
+                    <td><strong>GHS ${t.total.toFixed(2)}</strong></div></td>
+                    <td><span class="payment-badge"><i class="fas ${t.paymentMethod === 'Mobile Money' ? 'fa-mobile-alt' : 'fa-money-bill-wave'}"></i> ${t.paymentMethod}</span></div></td>
+                    <td><span class="transaction-status status-success"><i class="fas fa-check-circle"></i> Completed</span></div></td>
                 </tr>
             `).join('');
-            document.getElementById('viewAllBtn').style.display = 'none';
-            document.getElementById('tablePagination').style.display = 'flex';
+            
+            const viewAllBtn = document.getElementById('viewAllBtn');
+            if (viewAllBtn) viewAllBtn.style.display = 'none';
+            
+            const tablePagination = document.getElementById('tablePagination');
+            if (tablePagination) tablePagination.style.display = 'flex';
         }
 
         // ==================== UI FUNCTIONS ====================
@@ -4728,11 +5759,26 @@
                 case 'settings':
                     content.innerHTML = renderSettings();
                     break;
+                 case 'returns':
+                    content.innerHTML = renderReturns();
+                    break;
+                 case 'customers':
+                    content.innerHTML = renderCustomers();
+                    break;
+                 case 'returns':
+                    content.innerHTML = renderReturns();
+                    break;
+                 case 'returns':
+                    content.innerHTML = renderReturns();
+                    break;
             }
         }
 
         function renderOverview() {
             if (!currentShop) return '';
+            
+            const isStaff = currentUser && currentUser.role === 'staff';
+            
             return `
                 <div class="header">
                     <div class="page-title">
@@ -4745,22 +5791,31 @@
                             <span id="selectedAuditDate">${moment().format('MMM D, YYYY')}</span>
                             <span>▼</span>
                         </div>
-                        <button class="btn-backup" onclick="showBackupModal()">
-                            <i class="fas fa-cloud-upload-alt"></i> Backup
-                        </button>
+                        ${!isStaff ? `<button class="btn-backup" onclick="showBackupModal()">
+                            <i class="fas fa-cloud-upload-alt"></i> Backup                        </button>` : ''}
                     </div>
                 </div>
+                ${!isStaff ? `
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-header"><span>Shop Revenue</span><span>💰</span></div><div class="stat-value">GHS ${(currentShop.revenue || 0).toLocaleString()}</div><div class="stat-change">Total revenue</div></div>
                     <div class="stat-card"><div class="stat-header"><span>Transactions</span><span>🛍️</span></div><div class="stat-value">${currentShop.transactions || 0}</div><div class="stat-change">All time</div></div>
                     <div class="stat-card"><div class="stat-header"><span>Products</span><span>📦</span></div><div class="stat-value">${currentShop.inventory.length}</div><div class="stat-change">${currentShop.inventory.filter(i => i.stock <= 5).length} low stock</div></div>
                     <div class="stat-card"><div class="stat-header"><span>Staff Members</span><span>👥</span></div><div class="stat-value">${staffList.length}</div><div class="stat-change">Active team</div></div>
                 </div>
+                ` : `
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-header"><span>Products</span><span>📦</span></div><div class="stat-value">${currentShop.inventory.length}</div><div class="stat-change">Total inventory items</div></div>
+                    <div class="stat-card"><div class="stat-header"><span>Low Stock Items</span><span>⚠️</span></div><div class="stat-value">${currentShop.inventory.filter(i => i.stock <= i.minStock && i.stock > 0).length}</div><div class="stat-change">Need attention</div></div>
+                    <div class="stat-card"><div class="stat-header"><span>Out of Stock</span><span>❌</span></div><div class="stat-value">${currentShop.inventory.filter(i => i.stock === 0).length}</div><div class="stat-change">Unavailable items</div></div>
+                    <div class="stat-card"><div class="stat-header"><span>Today's Sales</span><span>🛒</span></div><div class="stat-value">Loading...</div><div class="stat-change">Ask admin for details</div></div>
+                </div>
+                `}
                 <div class="daily-audit">
                     <div class="audit-header">
                         <h2 class="audit-title">Daily Business Review - <span id="auditDateDisplay">${moment().format('MMMM D, YYYY')}</span></h2>
                         <div class="audit-date-picker" id="auditDatePicker"><i class="fas fa-calendar-alt"></i><span>Change Date</span></div>
                     </div>
+                    ${!isStaff ? `
                     <div class="audit-summary">
                         <div class="audit-summary-card"><div class="audit-summary-label">Total Sales</div><div class="audit-summary-value" id="auditTotalSales">GHS 0.00</div><div class="audit-summary-change">Loading...</div></div>
                         <div class="audit-summary-card"><div class="audit-summary-label">Transactions</div><div class="audit-summary-value" id="auditTransactions">0</div><div class="audit-summary-change">Loading...</div></div>
@@ -4779,6 +5834,13 @@
                             <div><div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Other</span><span id="otherAmount">GHS 0.00 (0%)</span></div><div class="breakdown-bar"><div class="breakdown-fill fill-info" id="otherBar" style="width: 0%"></div></div></div>
                         </div>
                     </div>
+                    ` : `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-lock" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>Financial data is restricted to admin users only.</p>
+                        <p style="font-size: 14px;">Please contact your administrator for sales reports.</p>
+                    </div>
+                    `}
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
                         <div class="summary-card"><div class="summary-label">🏆 Top Selling Product</div><div class="summary-value" id="auditTopProduct">No sales</div><div class="summary-sub">Today's best seller</div></div>
                         <div class="summary-card"><div class="summary-label">⏰ Busiest Hour</div><div class="summary-value" id="auditBusiestHour">--:--</div><div class="summary-sub">Peak sales time</div></div>
@@ -4819,6 +5881,13 @@
                         </div>
                     </div>
                     <div class="cart-sidebar">
+                                                <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px;">Select Customer (Optional)</label>
+                            <select id="posCustomerSelect" style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
+                                <option value="">Walk-in Customer</option>
+                                ${customers.map(c => `<option value="${c.id}">${c.name}${c.phone ? ' - ' + c.phone : ''}</option>`).join('')}
+                            </select>
+                        </div>
                         <h3 style="margin-bottom: 16px;">Current Cart (${cart.length} items)</h3>
                         <div class="cart-items" id="cartItems">
                             ${cart.length === 0 ? '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">Cart is empty</div>' : cart.map((item, index) => `
@@ -4858,6 +5927,9 @@
                         </div>
                         <button class="btn btn-primary" style="width: 100%; margin-bottom: 8px;" onclick="processPayment()">Process Payment</button>
                         <button class="btn btn-secondary" style="width: 100%;" onclick="clearCart()">🗑️ Clear Cart</button>
+                                                <button class="btn btn-danger" style="width: 100%; margin-top: 8px;" onclick="showReturnModal()">
+                            <i class="fas fa-exchange-alt"></i> Process Return
+                        </button>
                     </div>
                 </div>
             `;
@@ -4970,13 +6042,60 @@
                             <div class="chart-card"><div class="chart-header"><div class="chart-title">Sales Trend</div><div class="chart-legend"><div class="legend-item"><div class="legend-color" style="background: var(--accent-primary);"></div><span>Revenue</span></div></div></div><div class="chart-container"><canvas id="salesChart"></canvas></div></div>
                             <div class="chart-card"><div class="chart-header"><div class="chart-title">Payment Methods</div><div class="chart-legend"><div class="legend-item"><div class="legend-color" style="background: var(--accent-primary);"></div><span>Mobile Money</span></div><div class="legend-item"><div class="legend-color" style="background: var(--success);"></div><span>Cash</span></div></div></div><div class="chart-container"><canvas id="paymentChart"></canvas></div></div>
                         </div>
-                        <div class="data-table-container">
-                            <div class="table-header"><div class="table-title">Recent Transactions</div><div class="table-filters"><input type="text" class="table-search" placeholder="Search transactions..." id="transactionSearch" onkeyup="filterTransactions()"><select class="table-search" style="width: 150px;" onchange="filterTransactions()" id="paymentFilter"><option value="">All Methods</option><option value="Cash">Cash</option><option value="Mobile Money">Mobile Money</option></select><button class="btn btn-secondary" onclick="showAllTransactions()" id="viewAllBtn">View All</button></div></div>
-                            <table class="transactions-table" id="transactionsTable"><thead><tr><th>Transaction ID</th><th>Date & Time</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment Method</th><th>Status</th></tr></thead><tbody id="transactionsTableBody">${recentTransactions.map(t => `<tr><td><span style="font-family: monospace;">${t.id}</span></td><td>${t.date}</td><td>${t.customer}</td><td>${t.items} items</td><td><strong>GHS ${t.total.toFixed(2)}</strong></td><td><span class="payment-badge"><i class="fas ${t.paymentMethod === 'Mobile Money' ? 'fa-mobile-alt' : 'fa-money-bill-wave'}"></i> ${t.paymentMethod}</span></td><td><span class="transaction-status status-success"><i class="fas fa-check-circle"></i> Completed</span></td></tr>`).join('')}</tbody></table>
-                            <div class="table-pagination" id="tablePagination" style="display: none;"><div class="pagination-info">Showing 1 to ${transactions.length} of ${transactions.length} entries</div><div><button class="pagination-btn" disabled><i class="fas fa-chevron-left"></i></button><button class="pagination-btn" style="background: var(--accent-primary); color: white;">1</button><button class="pagination-btn" disabled>2</button><button class="pagination-btn" disabled>3</button><button class="pagination-btn" disabled><i class="fas fa-chevron-right"></i></button></div></div>
+                                                <div class="data-table-container">
+                            <div class="table-header">
+                                <div class="table-title">Recent Transactions</div>
+                                <div class="table-filters">
+                                    <input type="text" class="table-search" placeholder="Search transactions..." id="transactionSearch" onkeyup="filterTransactions()">
+                                    <select class="table-search" style="width: 150px;" onchange="filterTransactions()" id="paymentFilter">
+                                        <option value="">All Methods</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Mobile Money">Mobile Money</option>
+                                    </select>
+                                    <select class="table-search" style="width: 150px;" onchange="filterTransactionsByCustomer()" id="customerFilter">
+                                        <option value="">All Customers</option>
+                                        ${customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                                    </select>
+                                    <button class="btn btn-secondary" onclick="showAllTransactions()" id="viewAllBtn">View All</button>
+                                </div>
+                            </div>
+                            <table class="transactions-table" id="transactionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Date & Time</th>
+                                        <th>Customer</th>
+                                        <th>Items</th>
+                                        <th>Total</th>
+                                        <th>Payment Method</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTableBody">
+                                    ${recentTransactions.map(t => `
+                                        <tr>
+                                            <td><span style="font-family: monospace;">${t.id}</span></td>
+                                            <td>${t.date}</div></td>
+                                            <td>${t.customer || 'Walk-in'}</div></td>
+                                            <td>${t.items} items</div></td>
+                                            <td><strong>GHS ${t.total.toFixed(2)}</strong></div></td>
+                                            <td><span class="payment-badge"><i class="fas ${t.paymentMethod === 'Mobile Money' ? 'fa-mobile-alt' : 'fa-money-bill-wave'}"></i> ${t.paymentMethod}</span></div></td>
+                                            <td><span class="transaction-status status-success"><i class="fas fa-check-circle"></i> Completed</span></div></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            <div class="table-pagination" id="tablePagination" style="display: none;">
+                                <div class="pagination-info">Showing 1 to ${transactions.length} of ${transactions.length} entries</div>
+                                <div>
+                                    <button class="pagination-btn" disabled><i class="fas fa-chevron-left"></i></button>
+                                    <button class="pagination-btn" style="background: var(--accent-primary); color: white;">1</button>
+                                    <button class="pagination-btn" disabled>2</button>
+                                    <button class="pagination-btn" disabled>3</button>
+                                    <button class="pagination-btn" disabled><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
             `;
         }
 
@@ -5043,19 +6162,154 @@
                 </div>
             `;
         }
+                        function renderReturns() {
+            // Load returns from localStorage
+            const storedReturns = JSON.parse(localStorage.getItem(`pos_returns_${currentShop?.id}`)) || [];
+            returns = storedReturns;
+            const totalReturns = returns.reduce((sum, r) => sum + r.refundAmount, 0);
+            
+            if (returns.length === 0) {
+                return `
+                    <div class="header">
+                        <div class="page-title">
+                            <h1>Returns & Refunds</h1>
+                            <p>Track product returns and refunds</p>
+                        </div>
+                        <button class="btn btn-danger" onclick="showReturnModal()">
+                            <i class="fas fa-exchange-alt"></i> Process Return
+                        </button>
+                    </div>
+                    <div style="text-align: center; padding: 60px; color: var(--text-secondary);">
+                        <i class="fas fa-undo-alt" style="font-size: 64px; margin-bottom: 20px;"></i>
+                        <p>No returns processed yet</p>
+                        <button class="btn btn-danger" style="margin-top: 16px;" onclick="showReturnModal()">
+                            Process Your First Return
+                        </button>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="header">
+                    <div class="page-title">
+                        <h1>Returns & Refunds</h1>
+                        <p>Total Refunded: <span style="color: var(--danger); font-size: 24px;">GHS ${totalReturns.toFixed(2)}</span></p>
+                    </div>
+                    <button class="btn btn-danger" onclick="showReturnModal()">
+                        <i class="fas fa-exchange-alt"></i> Process Return
+                    </button>
+                </div>
+                <div class="card">
+                    <h3 style="margin-bottom: 16px;">Return History</h3>
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border);">
+                                    <th style="text-align: left; padding: 12px;">Date</th>
+                                    <th style="text-align: left; padding: 12px;">Product</th>
+                                    <th style="text-align: left; padding: 12px;">Qty</th>
+                                    <th style="text-align: left; padding: 12px;">Refund</th>
+                                    <th style="text-align: left; padding: 12px;">Reason</th>
+                                    <th style="text-align: left; padding: 12px;">Staff</th>
+                                    <th style="text-align: left; padding: 12px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${returns.map(r => `
+                                    <tr style="border-bottom: 1px solid var(--border);">
+                                        <td style="padding: 12px;">${r.date}</td>
+                                        <td style="padding: 12px;"><strong>${r.productName}</strong></td>
+                                        <td style="padding: 12px;">${r.quantity}</td>
+                                        <td style="padding: 12px; color: var(--danger); font-weight: 600;">GHS ${r.refundAmount.toFixed(2)}</td>
+                                        <td style="padding: 12px;">${r.reason}</td>
+                                        <td style="padding: 12px;">${r.staff || '-'}</td>
+                                        <td style="padding: 12px;">
+                                            <button class="btn-icon" onclick="deleteReturn(${r.id})" style="background: var(--danger); color: white;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+            function renderCustomers() {
+            loadCustomers();
+           loadReturns();
+            const totalCustomers = customers.length;
+            const totalSpent = customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+            
+            if (customers.length === 0) {
+                return `
+                    <div class="header">
+                        <div class="page-title">
+                            <h1>Customer Management</h1>
+                            <p>Manage your customers and their purchase history</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="document.getElementById('addCustomerModal').classList.add('active')">
+                            <i class="fas fa-user-plus"></i> Add Customer
+                        </button>
+                    </div>
+                    <div style="text-align: center; padding: 60px; color: var(--text-secondary);">
+                        <i class="fas fa-users" style="font-size: 64px; margin-bottom: 20px;"></i>
+                        <p>No customers yet</p>
+                        <button class="btn btn-primary" style="margin-top: 16px;" onclick="document.getElementById('addCustomerModal').classList.add('active')">
+                            Add Your First Customer
+                        </button>
+                    </div>
+                `;
+            }
+            return `
+                <div class="header">
+                    <div class="page-title">
+                        <h1>Customer Management</h1>
+                        <p>${totalCustomers} total customers | Total spent: GHS ${totalSpent.toLocaleString()}</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="document.getElementById('addCustomerModal').classList.add('active')">
+                        <i class="fas fa-user-plus"></i> Add Customer
+                    </button>
+                </div>
+                <div class="grid-2">
+                    ${customers.map(customer => {
+                        const purchaseCount = transactions.filter(t => t.customerId == customer.id).length;
+                        return `
+                            <div class="customer-card" onclick="viewCustomerHistory(${customer.id})" style="cursor: pointer;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div style="flex: 1;">
+                                        <h3 style="margin-bottom: 8px;"><i class="fas fa-user-circle"></i> ${customer.name}</h3>
+                                        ${customer.phone ? `<p><i class="fas fa-phone"></i> ${customer.phone}</p>` : ''}
+                                        ${customer.email ? `<p><i class="fas fa-envelope"></i> ${customer.email}</p>` : ''}
+                                        ${customer.address ? `<p><i class="fas fa-map-marker-alt"></i> ${customer.address}</p>` : ''}
+                                        <p style="margin-top: 8px;"><i class="fas fa-calendar-alt"></i> Joined: ${customer.joinDate}</p>
+                                        <p><i class="fas fa-cedi-sign"></i> Total Spent: GHS ${(customer.totalSpent || 0).toFixed(2)}</p>
+                                        <p><i class="fas fa-shopping-cart"></i> Purchases: ${purchaseCount}</p>
+                                    </div>
+                                    <button class="btn-icon" onclick="event.stopPropagation();deleteCustomer(${customer.id})" style="background: var(--danger); color: white;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
 
         // ==================== UTILITY FUNCTIONS ====================
         function filterPOSProducts() {
-            const searchTerm = document.getElementById('posSearch').value.toLowerCase();
-            const category = document.getElementById('posCategoryFilter').value;
+            const searchTerm = document.getElementById('posSearch')?.value.toLowerCase() || '';
+            const category = document.getElementById('posCategoryFilter')?.value;
             const products = document.querySelectorAll('#posProductGrid .product-card');
             products.forEach(product => {
-                const productName = product.getAttribute('data-name');
-                const productCategory = product.getAttribute('data-category');
+                const productName = product.getAttribute('data-name') || '';
+                const productCategory = product.getAttribute('data-category') || '';
                 let show = true;
                 if (searchTerm && !productName.includes(searchTerm)) show = false;
                 if (category && productCategory !== category) show = false;
-                product.style.display = show ? 'block' : 'none';
+                product.style.display = show ? 'flex' : 'none';
             });
         }
 
@@ -5100,84 +6354,728 @@
         }
 
         function refreshInventory() { if (currentTab === 'inventory') renderMainContent(); }
-        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); if (modalId === 'addStaffModal') { const addBtn = document.querySelector('#addStaffModal .btn-primary'); if (addBtn) { addBtn.textContent = 'Add Staff'; addBtn.onclick = addNewStaff; } } }
+        
+        function closeModal(modalId) { 
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('active'); 
+        }
 
-        // Theme Management
+        // Theme Management (FIX #10)
         function applyTheme(themeName) {
-            const themeMap = { purple: 'purple', green: 'green', orange: 'orange', pink: 'pink', teal: 'teal', cyan: 'cyan', dark: 'dark', light: 'light', blue: 'blue' };
-            document.body.className = `theme-${themeName}`;
+            const body = document.body;
+            body.className = '';
+            body.classList.add(`theme-${themeName}`);
             localStorage.setItem('selectedTheme', themeName);
+            
+            if (currentTab) renderMainContent();
+            
+            setTimeout(() => {
+                const cards = document.querySelectorAll('.theme-card');
+                cards.forEach(card => {
+                    card.classList.remove('active');
+                    if (card.querySelector('.theme-name')?.textContent.toLowerCase().includes(themeName)) {
+                        card.classList.add('active');
+                    }
+                });
+            }, 100);
+            
+            if (typeof errorMonitor !== 'undefined') {
+                errorMonitor.showToast(`Theme changed to ${themeName}!`, 'success');
+            }
+            
+            const newAccentColor = getComputedStyle(document.body).getPropertyValue('--accent-primary').trim();
+            if (salesChart) {
+                salesChart.data.datasets[0].borderColor = newAccentColor;
+                salesChart.data.datasets[0].pointBackgroundColor = newAccentColor;
+                salesChart.update();
+            }
+            if (paymentChart) {
+                paymentChart.data.datasets[0].backgroundColor[0] = newAccentColor;
+                paymentChart.update();
+            }
         }
 
         function initThemeGrid() {
             const themes = ['purple', 'green', 'orange', 'pink', 'teal', 'cyan', 'dark', 'light', 'blue'];
-            const themeNames = { purple: '💜 Purple', green: '💚 Green', orange: '🧡 Orange', pink: '💗 Pink', teal: '💙 Teal', cyan: '💎 Cyan', dark: '🌙 Dark', light: '☀️ Light', blue: '🔵 Blue' };
+            const themeColors = {
+                purple: '#8b5cf6', green: '#10b981', orange: '#f59e0b',
+                pink: '#ec489a', teal: '#14b8a6', cyan: '#06b6d4',
+                dark: '#3b82f6', light: '#6366f1', blue: '#2563eb'
+            };
+            const themeNames = { 
+                purple: '💜 Purple', green: '💚 Green', orange: '🧡 Orange', 
+                pink: '💗 Pink', teal: '💙 Teal', cyan: '💎 Cyan', 
+                dark: '🌙 Dark', light: '☀️ Light', blue: '🔵 Blue' 
+            };
             const currentTheme = localStorage.getItem('selectedTheme') || 'purple';
             const grid = document.getElementById('themeGrid');
             if (grid) {
-                grid.innerHTML = themes.map(theme => `<div class="theme-card ${currentTheme === theme ? 'active' : ''}" onclick="applyTheme('${theme}')"><div class="theme-color-preview" style="background: var(--accent-primary);"></div><div class="theme-name">${themeNames[theme]}</div></div>`).join('');
+                grid.innerHTML = themes.map(theme => `
+                    <div class="theme-card ${currentTheme === theme ? 'active' : ''}" onclick="applyTheme('${theme}')">
+                        <div class="theme-color-preview" style="background: ${themeColors[theme]};"></div>
+                        <div class="theme-name">${themeNames[theme]}</div>
+                    </div>
+                `).join('');
             }
         }
 
         function updateThemeColor(color, value) {
             themeSettings[color] = value;
             document.documentElement.style.setProperty(`--accent-${color === 'primary' ? 'primary' : 'secondary'}`, value);
+            if (salesChart) {
+                salesChart.data.datasets[0].borderColor = value;
+                salesChart.data.datasets[0].pointBackgroundColor = value;
+                salesChart.update();
+            }
+            if (paymentChart) {
+                paymentChart.data.datasets[0].backgroundColor[0] = value;
+                paymentChart.update();
+            }
         }
 
         function resetSettings() {
             applyTheme('purple');
+            themeSettings = {
+                primary: '#6366f1', secondary: '#8b5cf6', background: '#0a0b0e', text: '#ffffff'
+            };
+            document.documentElement.style.setProperty('--accent-primary', '#6366f1');
+            document.documentElement.style.setProperty('--accent-secondary', '#8b5cf6');
             businessSettings = { enableSound: true, autoSave: true, lowStockAlerts: true, currency: 'GHS', defaultReportPeriod: 'daily', exportFormat: 'csv' };
             renderMainContent();
         }
 
-        function saveSettings() { alert('Settings saved successfully!'); }
+        function saveSettings() { 
+            alert('Settings saved successfully!'); 
+        }
 
-        // ==================== CSV IMPORT/EXPORT FUNCTIONS ====================
-        function showImportModal() { document.getElementById('importCSVModal').classList.add('active'); document.getElementById('importPreview').style.display = 'none'; document.getElementById('fileInput').value = ''; importData = []; }
-        function handleDragOver(event) { event.preventDefault(); document.getElementById('fileUploadArea').classList.add('dragover'); }
-        function handleDragLeave(event) { event.preventDefault(); document.getElementById('fileUploadArea').classList.remove('dragover'); }
-        function handleDrop(event) { event.preventDefault(); document.getElementById('fileUploadArea').classList.remove('dragover'); const file = event.dataTransfer.files[0]; if (file && file.type === 'text/csv') processCSVFile(file); else alert('Please upload a valid CSV file'); }
-        function handleFileSelect(event) { const file = event.target.files[0]; if (file) processCSVFile(file); }
-        function processCSVFile(file) { const reader = new FileReader(); reader.onload = function(e) { parseCSV(e.target.result); }; reader.readAsText(file); }
+        // ==================== CSV IMPORT/EXPORT FUNCTIONS (FIX #6) ====================
+        function showImportModal() { 
+            document.getElementById('importCSVModal').classList.add('active'); 
+            document.getElementById('importPreview').style.display = 'none'; 
+            document.getElementById('fileInput').value = ''; 
+            importData = []; 
+        }
+        
+        function handleDragOver(event) { 
+            event.preventDefault(); 
+            document.getElementById('fileUploadArea').classList.add('dragover'); 
+        }
+        
+        function handleDragLeave(event) { 
+            event.preventDefault(); 
+            document.getElementById('fileUploadArea').classList.remove('dragover'); 
+        }
+        
+        function handleDrop(event) { 
+            event.preventDefault(); 
+            document.getElementById('fileUploadArea').classList.remove('dragover'); 
+            const file = event.dataTransfer.files[0]; 
+            if (file && file.type === 'text/csv') processCSVFile(file); 
+            else alert('Please upload a valid CSV file'); 
+        }
+        
+        function handleFileSelect(event) { 
+            const file = event.target.files[0]; 
+            if (file) processCSVFile(file); 
+        }
+        
+        function processCSVFile(file) { 
+            const reader = new FileReader(); 
+            reader.onload = function(e) { parseCSV(e.target.result); }; 
+            reader.readAsText(file); 
+        }
+        
         function parseCSV(csv) {
-            const lines = csv.split('\n'); const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const lines = csv.split('\n'); 
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
             const requiredHeaders = ['category', 'costprice', 'name', 'price', 'stock'];
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-            if (missingHeaders.length > 0) { alert(`CSV should have columns: category, costPrice, name, price, stock`); return; }
-            importData = []; let validCount = 0, errorCount = 0;
+            if (missingHeaders.length > 0) { 
+                alert(`CSV should have columns: category, costPrice, name, price, stock`); 
+                return; 
+            }
+            importData = []; 
+            let validCount = 0, errorCount = 0;
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                const values = lines[i].split(','); const row = {};
+                const values = lines[i].split(','); 
+                const row = {};
                 headers.forEach((header, index) => { row[header] = values[index] ? values[index].trim() : ''; });
                 const errors = validateImportRow(row, i);
-                importData.push({ category: row.category, costPrice: parseFloat(row.costprice) || 0, name: row.name, price: parseFloat(row.price) || 0, stock: parseInt(row.stock) || 0, minStock: parseInt(row.minstock) || 10, rowNumber: i, valid: errors.length === 0, errors: errors });
-                if (errors.length === 0) validCount++; else errorCount++;
+                importData.push({ 
+                    category: row.category, 
+                    costPrice: parseFloat(row.costprice) || 0, 
+                    name: row.name, 
+                    price: parseFloat(row.price) || 0, 
+                    stock: parseInt(row.stock) || 0, 
+                    minStock: parseInt(row.minstock) || 10, 
+                    rowNumber: i, 
+                    valid: errors.length === 0, 
+                    errors: errors 
+                });
+                if (errors.length === 0) validCount++; 
+                else errorCount++;
             }
             displayImportPreview(validCount, errorCount);
         }
-        function validateImportRow(row, rowNumber) { const errors = []; if (!row.name) errors.push('Product name is required'); if (!row.category) errors.push('Category is required'); if (!row.price || isNaN(row.price) || parseFloat(row.price) <= 0) errors.push('Valid selling price is required'); if (row.costprice && isNaN(row.costprice)) errors.push('Cost price must be a number'); if (!row.stock || isNaN(row.stock) || parseInt(row.stock) < 0) errors.push('Valid stock quantity is required'); return errors; }
-        function displayImportPreview(validCount, errorCount) {
-            const previewBody = document.getElementById('previewBody'); const totalRows = importData.length;
-            previewBody.innerHTML = importData.map(row => `<tr class="${!row.valid ? 'error-row' : ''}"><td>${row.category || '-'}</td><td>GHS ${(row.costPrice || 0).toFixed(2)}</td><td>${row.name || '-'}</td><td>GHS ${(row.price || 0).toFixed(2)}</td><td>${row.stock || '0'}</td><td>${row.valid ? '<span class="badge badge-success">✓ Valid</span>' : '<span class="badge badge-danger" title="' + row.errors.join(', ') + '">⚠️ Errors</span>'}</td></tr>`).join('');
-            document.getElementById('totalRows').textContent = totalRows; document.getElementById('validRows').textContent = validCount; document.getElementById('errorRows').textContent = errorCount; document.getElementById('importPreview').style.display = 'block';
+        
+        function validateImportRow(row, rowNumber) { 
+            const errors = []; 
+            if (!row.name) errors.push('Product name is required'); 
+            if (!row.category) errors.push('Category is required'); 
+            if (!row.price || isNaN(row.price) || parseFloat(row.price) <= 0) errors.push('Valid selling price is required'); 
+            if (row.costprice && isNaN(row.costprice)) errors.push('Cost price must be a number'); 
+            if (!row.stock || isNaN(row.stock) || parseInt(row.stock) < 0) errors.push('Valid stock quantity is required'); 
+            return errors; 
         }
-        function downloadTemplate() { const template = 'category,costPrice,name,price,stock\nBEVERAGES,5,5 STAR,6,41\nALCOHOLIC,25,8 PM B/S,28,2\nALCOHOLIC,12,8PM M/S,18,28'; const blob = new Blob([template], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'product_import_template.csv'; a.click(); URL.revokeObjectURL(a.href); }
-        function exportInventory() { if (!currentShop) return; const headers = ['Category', 'Cost Price', 'Product Name', 'Selling Price', 'Stock', 'Min Stock', 'Total Profit']; const rows = currentShop.inventory.map(item => { const costPrice = parseFloat(item.costPrice) || 0; const price = parseFloat(item.price) || 0; const stock = parseInt(item.stock) || 0; const profitPerUnit = price - costPrice; const totalProfit = profitPerUnit * stock; return [item.category, costPrice.toFixed(2), item.name, price.toFixed(2), stock, item.minStock, totalProfit.toFixed(2)]; }); const csv = [headers, ...rows].map(row => row.join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${currentShop.name}_inventory_${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(a.href); }
-        function confirmImport() { if (!currentShop) return; const validProducts = importData.filter(row => row.valid); validProducts.forEach(product => { const existingProduct = currentShop.inventory.find(p => p.name.toLowerCase() === product.name.toLowerCase() && p.category.toLowerCase() === product.category.toLowerCase()); if (existingProduct) { existingProduct.costPrice = product.costPrice; existingProduct.price = product.price; existingProduct.stock = product.stock; } else { const newProduct = { id: Date.now() + Math.random(), name: product.name, category: product.category, costPrice: product.costPrice, price: product.price, stock: product.stock, minStock: product.minStock || 10 }; currentShop.inventory.push(newProduct); } }); db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory).then(() => { closeModal('importCSVModal'); showImportResults(validProducts.length, importData.filter(row => !row.valid)); }); }
-        function showImportResults(successCount, invalidProducts) { const modal = document.getElementById('importResultsModal'); document.getElementById('importSuccessCount').textContent = `✅ Successfully imported ${successCount} products`; document.getElementById('importErrorCount').textContent = invalidProducts.length > 0 ? `⚠️ Skipped ${invalidProducts.length} products with errors` : 'No errors found'; if (invalidProducts.length > 0) { document.getElementById('importErrors').style.display = 'block'; const errorList = document.getElementById('errorList'); errorList.innerHTML = invalidProducts.map(p => `<li style="color: var(--danger); margin-bottom: 8px;">Row ${p.rowNumber}: ${p.name || 'Unnamed'} - ${p.errors.join(', ')}</li>`).join(''); } else { document.getElementById('importErrors').style.display = 'none'; } modal.classList.add('active'); }
+        
+        function displayImportPreview(validCount, errorCount) {
+            const previewBody = document.getElementById('previewBody'); 
+            const totalRows = importData.length;
+            previewBody.innerHTML = importData.map(row => `<tr class="${!row.valid ? 'error-row' : ''}">
+                <td>${row.category || '-'}</td>
+                <td>GHS ${(row.costPrice || 0).toFixed(2)}</td>
+                <td>${row.name || '-'}</td>
+                <td>GHS ${(row.price || 0).toFixed(2)}</td>
+                <td>${row.stock || '0'}</td>
+                <td>${row.valid ? '<span class="badge badge-success">✓ Valid</span>' : '<span class="badge badge-danger" title="' + row.errors.join(', ') + '">⚠️ Errors</span>'}</td>
+            </tr>`).join('');
+            document.getElementById('totalRows').textContent = totalRows; 
+            document.getElementById('validRows').textContent = validCount; 
+            document.getElementById('errorRows').textContent = errorCount; 
+            document.getElementById('importPreview').style.display = 'block';
+        }
+        
+        function downloadTemplate() { 
+            const template = 'category,costPrice,name,price,stock\nBEVERAGES,5,5 STAR,6,41\nALCOHOLIC,25,8 PM B/S,28,2\nALCOHOLIC,12,8PM M/S,18,28'; 
+            const blob = new Blob([template], { type: 'text/csv' }); 
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = 'product_import_template.csv'; 
+            a.click(); 
+            URL.revokeObjectURL(a.href); 
+        }
+        
+        function exportInventory() { 
+            if (!currentShop) return; 
+            const headers = ['Category', 'Cost Price', 'Product Name', 'Selling Price', 'Stock', 'Min Stock', 'Total Profit']; 
+            const rows = currentShop.inventory.map(item => { 
+                const costPrice = parseFloat(item.costPrice) || 0; 
+                const price = parseFloat(item.price) || 0; 
+                const stock = parseInt(item.stock) || 0; 
+                const profitPerUnit = price - costPrice; 
+                const totalProfit = profitPerUnit * stock; 
+                return [item.category, costPrice.toFixed(2), item.name, price.toFixed(2), stock, item.minStock, totalProfit.toFixed(2)]; 
+            }); 
+            const csv = [headers, ...rows].map(row => row.join(',')).join('\n'); 
+            const blob = new Blob([csv], { type: 'text/csv' }); 
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = `${currentShop.name}_inventory_${new Date().toISOString().split('T')[0]}.csv`; 
+            a.click(); 
+            URL.revokeObjectURL(a.href); 
+            errorMonitor.showToast('Inventory exported!', 'success');
+        }
+        
+        function confirmImport() { 
+            if (!currentShop) return; 
+            const validProducts = importData.filter(row => row.valid); 
+            validProducts.forEach(product => { 
+                const existingProduct = currentShop.inventory.find(p => 
+                    p.name.toLowerCase() === product.name.toLowerCase() && 
+                    p.category.toLowerCase() === product.category.toLowerCase()
+                ); 
+                if (existingProduct) { 
+                    existingProduct.costPrice = product.costPrice; 
+                    existingProduct.price = product.price; 
+                    existingProduct.stock = product.stock; 
+                } else { 
+                    const newProduct = { 
+                        id: Date.now() + Math.random(), 
+                        name: product.name, 
+                        category: product.category, 
+                        costPrice: product.costPrice, 
+                        price: product.price, 
+                        stock: product.stock, 
+                        minStock: product.minStock || 10 
+                    }; 
+                    currentShop.inventory.push(newProduct); 
+                } 
+            }); 
+            db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory).then(() => { 
+                closeModal('importCSVModal'); 
+                refreshInventory(); 
+                showImportResults(validProducts.length, importData.filter(row => !row.valid)); 
+            }); 
+        }
+        
+        function showImportResults(successCount, invalidProducts) { 
+            const modal = document.getElementById('importResultsModal'); 
+            document.getElementById('importSuccessCount').textContent = `✅ Successfully imported ${successCount} products`; 
+            document.getElementById('importErrorCount').textContent = invalidProducts.length > 0 ? `⚠️ Skipped ${invalidProducts.length} products with errors` : 'No errors found'; 
+            if (invalidProducts.length > 0) { 
+                document.getElementById('importErrors').style.display = 'block'; 
+                const errorList = document.getElementById('errorList'); 
+                errorList.innerHTML = invalidProducts.map(p => `<li style="color: var(--danger); margin-bottom: 8px;">Row ${p.rowNumber}: ${p.name || 'Unnamed'} - ${p.errors.join(', ')}</li>`).join(''); 
+            } else { 
+                document.getElementById('importErrors').style.display = 'none'; 
+            } 
+            modal.classList.add('active'); 
+        }
+
+        function showAddProductModal() {
+            document.getElementById('addProductModal').classList.add('active');
+        }
 
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('selectedTheme') || 'purple';
             applyTheme(savedTheme);
-            renderShopList();
-            renderMainContent();
             setupCashLogTypeListener();
+            loadShops();
+            renderMainContent();
             setTimeout(() => { initAllDatePickers(); }, 500);
             const savedFrequency = localStorage.getItem('backup_frequency');
-            if (savedFrequency) { document.getElementById('backupFrequency').value = savedFrequency; startAutoBackup(); }
+            if (savedFrequency && document.getElementById('backupFrequency')) { 
+                document.getElementById('backupFrequency').value = savedFrequency; 
+                startAutoBackup(); 
+            }
             initThemeGrid();
         });
+        
+        // Helper function to load shops (called from Firebase)
+        async function loadShops() {
+            try {
+                const snapshot = await db.ref('registry').once('value');
+                const registry = snapshot.val() || {};
+                shops = Object.keys(registry).map(id => ({
+                    id: id,
+                    name: id,
+                    type: registry[id].type || 'Business',
+                    logo: registry[id].logo || null,
+                    revenue: 0,
+                    transactions: 0,
+                    inventory: []
+                }));
+                renderShopList();
+                for (let shop of shops) {
+                    await loadShopRevenue(shop.id);
+                }
+            } catch(e) {
+                console.error("Error loading shops:", e);
+                renderShopList();
+            }
+        }
+                // ==================== RETURNS/REFUNDS FUNCTIONS ====================
+        function loadReturns() {
+            returns = JSON.parse(localStorage.getItem(`pos_returns_${currentShop?.id}`)) || [];
+            return returns;
+        }
+        
+                function showReturnModal() {
+            const select = document.getElementById('returnProductSelect');
+            console.log("Current inventory for return modal:", currentShop.inventory);
+            
+            select.innerHTML = '<option value="">Select a product</option>' + 
+                currentShop.inventory.map(p => {
+                    // Make sure ID is properly stored
+                    const productId = p.id;
+                    console.log("Adding product to dropdown:", productId, p.name, "Stock:", p.stock);
+                    return `<option value="${productId}" data-price="${p.price}" data-name="${p.name}" data-stock="${p.stock}">${p.name} (Stock: ${p.stock}) - GHS ${p.price}</option>`;
+                }).join('');
+            
+            document.getElementById('returnQuantity').value = 1;
+            document.getElementById('returnAmount').value = '';
+            document.getElementById('returnNotes').value = '';
+            
+            select.onchange = function() {
+                const selectedOption = select.options[select.selectedIndex];
+                const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                const qty = parseInt(document.getElementById('returnQuantity').value) || 1;
+                const stock = parseInt(selectedOption.getAttribute('data-stock') || 0);
+                document.getElementById('returnAmount').value = (price * qty).toFixed(2);
+                
+                // Validate quantity against stock
+                const qtyInput = document.getElementById('returnQuantity');
+                if (qty > stock) {
+                    qtyInput.value = stock;
+                    document.getElementById('returnAmount').value = (price * stock).toFixed(2);
+                    alert(`Only ${stock} units available for return`);
+                }
+            };
+            
+            document.getElementById('returnQuantity').oninput = function() {
+                const selectedOption = select.options[select.selectedIndex];
+                const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                const qty = parseInt(this.value) || 1;
+                const stock = parseInt(selectedOption.getAttribute('data-stock') || 0);
+                
+                if (qty > stock) {
+                    this.value = stock;
+                    alert(`Only ${stock} units available for return`);
+                    document.getElementById('returnAmount').value = (price * stock).toFixed(2);
+                } else {
+                    document.getElementById('returnAmount').value = (price * qty).toFixed(2);
+                }
+            };
+            
+            document.getElementById('processReturnModal').classList.add('active');
+        }
+        
+                        function showReturnModal() {
+            const select = document.getElementById('returnProductSelect');
+            
+            if (!currentShop || !currentShop.inventory) {
+                console.error("No inventory found");
+                alert("Please select a business first");
+                return;
+            }
+            
+            console.log("Building return dropdown with", currentShop.inventory.length, "products");
+            
+            select.innerHTML = '<option value="">Select a product</option>' + 
+                currentShop.inventory.map(p => {
+                    // Store ID as string to avoid type issues
+                    const productId = String(p.id);
+                    return `<option value="${productId}" data-price="${p.price}" data-name="${p.name}" data-stock="${p.stock}">${p.name} (Stock: ${p.stock}) - GHS ${p.price}</option>`;
+                }).join('');
+            
+            document.getElementById('returnQuantity').value = 1;
+            document.getElementById('returnAmount').value = '';
+            document.getElementById('returnNotes').value = '';
+            
+            select.onchange = function() {
+                const selectedOption = select.options[select.selectedIndex];
+                const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                const qty = parseInt(document.getElementById('returnQuantity').value) || 1;
+                const stock = parseInt(selectedOption.getAttribute('data-stock') || 0);
+                document.getElementById('returnAmount').value = (price * qty).toFixed(2);
+                
+                const qtyInput = document.getElementById('returnQuantity');
+                if (qty > stock) {
+                    qtyInput.value = stock;
+                    document.getElementById('returnAmount').value = (price * stock).toFixed(2);
+                    alert(`Only ${stock} units available for return`);
+                }
+            };
+            
+            document.getElementById('returnQuantity').oninput = function() {
+                const selectedOption = select.options[select.selectedIndex];
+                const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                let qty = parseInt(this.value) || 1;
+                const stock = parseInt(selectedOption.getAttribute('data-stock') || 0);
+                
+                if (qty > stock) {
+                    this.value = stock;
+                    qty = stock;
+                    alert(`Only ${stock} units available for return`);
+                }
+                document.getElementById('returnAmount').value = (price * qty).toFixed(2);
+            };
+            
+            document.getElementById('processReturnModal').classList.add('active');
+        }
+        
+        function deleteReturn(returnId) {
+            if (confirm("Are you sure you want to delete this return record?")) {
+                returns = returns.filter(r => r.id !== returnId);
+                localStorage.setItem(`pos_returns_${currentShop.id}`, JSON.stringify(returns));
+                if (currentTab === 'returns') renderMainContent();
+                alert("Return record deleted!");
+            }
+        }
+        
+        function getTotalReturns() {
+            return returns.reduce((sum, r) => sum + r.refundAmount, 0);
+        }
+        
+        // Debug function
+        function debugCurrentShop() {
+            console.log('=== DEBUG INFO ===');
+            console.log('Current Shop:', currentShop?.name);
+            console.log('Shop Path:', currentShopPath);
+            console.log('Products:', currentShop?.inventory?.length);
+            return { shop: currentShop?.name, productCount: currentShop?.inventory?.length };
+        }
+                // ==================== CUSTOMER MANAGEMENT FUNCTIONS ====================
+        function loadCustomers() {
+            customers = JSON.parse(localStorage.getItem(`pos_customers_${currentShop?.id}`)) || [];
+            return customers;
+        }
+        
+        function saveCustomer() {
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            const email = document.getElementById('customerEmail').value.trim();
+            const address = document.getElementById('customerAddress').value.trim();
+            
+            if (!name) {
+                alert("Customer name is required");
+                return;
+            }
+            
+            const newCustomer = {
+                id: Date.now(),
+                name: name,
+                phone: phone,
+                email: email,
+                address: address,
+                totalSpent: 0,
+                joinDate: new Date().toISOString().split('T')[0]
+            };
+            
+            customers.push(newCustomer);
+            localStorage.setItem(`pos_customers_${currentShop.id}`, JSON.stringify(customers));
+            
+            // Clear form
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('customerAddress').value = '';
+            
+            closeModal('addCustomerModal');
+            if (currentTab === 'customers') renderMainContent();
+            alert("Customer added successfully!");
+        }
+                // ==================== RETURNS/REFUNDS FUNCTIONS ====================
+        function loadReturns() {
+            returns = JSON.parse(localStorage.getItem(`pos_returns_${currentShop?.id}`)) || [];
+            return returns;
+        }
+        
+        function deleteReturn(returnId) {
+            if (confirm("Are you sure you want to delete this return record?")) {
+                returns = returns.filter(r => r.id !== returnId);
+                localStorage.setItem(`pos_returns_${currentShop.id}`, JSON.stringify(returns));
+                if (currentTab === 'returns') renderMainContent();
+                alert("Return record deleted!");
+            }
+        }
+        
+        function getTotalReturns() {
+            return returns.reduce((sum, r) => sum + r.refundAmount, 0);
+        }
+                // ==================== RETURNS/REFUNDS FUNCTIONS ====================
+        function loadReturns() {
+            returns = JSON.parse(localStorage.getItem(`pos_returns_${currentShop?.id}`)) || [];
+            return returns;
+        }
+        
+        function showReturnModal() {
+            const select = document.getElementById('returnProductSelect');
+            
+            if (!currentShop || !currentShop.inventory) {
+                alert("Please select a business first");
+                return;
+            }
+            
+            select.innerHTML = '<option value="">Select a product</option>' + 
+                currentShop.inventory.map(p => {
+                    const productId = String(p.id);
+                    return `<option value="${productId}" data-price="${p.price}" data-name="${p.name}" data-stock="${p.stock}">${p.name} (Stock: ${p.stock}) - GHS ${p.price}</option>`;
+                }).join('');
+            
+            document.getElementById('returnQuantity').value = 1;
+            document.getElementById('returnAmount').value = '';
+            document.getElementById('returnNotes').value = '';
+            
+            select.onchange = function() {
+                const selectedOption = select.options[select.selectedIndex];
+                const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                const qty = parseInt(document.getElementById('returnQuantity').value) || 1;
+                document.getElementById('returnAmount').value = (price * qty).toFixed(2);
+            };
+            
+            document.getElementById('returnQuantity').oninput = function() {
+                const selectedOption = select.options[select.selectedIndex];
+                const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                const qty = parseInt(this.value) || 1;
+                document.getElementById('returnAmount').value = (price * qty).toFixed(2);
+            };
+            
+            document.getElementById('processReturnModal').classList.add('active');
+        }
+        
+        function processReturn() {
+            const productSelect = document.getElementById('returnProductSelect');
+            const productId = productSelect.value;
+            const quantity = parseInt(document.getElementById('returnQuantity').value);
+            const reason = document.getElementById('returnReason').value;
+            const refundAmount = parseFloat(document.getElementById('returnAmount').value);
+            const notes = document.getElementById('returnNotes').value.trim();
+            
+            if (!productId || productId === "") {
+                alert("Please select a product");
+                return;
+            }
+            
+            if (!quantity || quantity <= 0) {
+                alert("Please enter a valid quantity");
+                return;
+            }
+            
+            // Find product - compare as strings
+            const product = currentShop.inventory.find(p => String(p.id) === String(productId));
+            
+            if (!product) {
+                alert("Product not found. Please refresh and try again.");
+                return;
+            }
+            
+            if (product.stock < quantity) {
+                alert(`Only ${product.stock} units available for return.`);
+                return;
+            }
+            
+            // Remove from inventory
+            product.stock -= quantity;
+            
+            // Save to Firebase
+            db.ref(`shops/${currentShop.id}/inventory`).set(currentShop.inventory);
+            
+            // Create return record
+            const returnRecord = {
+                id: Date.now(),
+                productId: String(product.id),
+                productName: product.name,
+                quantity: quantity,
+                refundAmount: refundAmount,
+                reason: reason,
+                notes: notes,
+                date: new Date().toISOString().split('T')[0],
+                datetime: new Date().toLocaleString(),
+                staff: currentUser ? currentUser.name : 'Unknown'
+            };
+            
+            // Load existing returns, add new one, save
+            let existingReturns = JSON.parse(localStorage.getItem(`pos_returns_${currentShop.id}`)) || [];
+            existingReturns.unshift(returnRecord);
+            localStorage.setItem(`pos_returns_${currentShop.id}`, JSON.stringify(existingReturns));
+            returns = existingReturns;
+            
+            closeModal('processReturnModal');
+                        // checkLowStock(); // Uncomment when low stock feature is added
+            
+            if (currentTab === 'returns') renderMainContent();
+            else if (currentTab === 'inventory') renderMainContent();
+            
+            alert(`✅ Return processed!\n\nProduct: ${product.name}\nQuantity: ${quantity}\nRefund: GHS ${refundAmount.toFixed(2)}\nReason: ${reason}`);
+        }
+        
+        function deleteReturn(returnId) {
+            if (confirm("Delete this return record?")) {
+                let existingReturns = JSON.parse(localStorage.getItem(`pos_returns_${currentShop.id}`)) || [];
+                existingReturns = existingReturns.filter(r => r.id !== returnId);
+                localStorage.setItem(`pos_returns_${currentShop.id}`, JSON.stringify(existingReturns));
+                returns = existingReturns;
+                if (currentTab === 'returns') renderMainContent();
+                alert("Return record deleted!");
+            }
+        }
+                function checkLowStock() {
+            if (!currentShop) return;
+            
+            const lowStockItems = currentShop.inventory.filter(p => p.stock <= p.minStock && p.stock > 0);
+            const outOfStockItems = currentShop.inventory.filter(p => p.stock === 0);
+            
+            // Update the badge in navigation if it exists
+            const badge = document.getElementById('lowStockNavBadge');
+            const totalAlerts = lowStockItems.length + outOfStockItems.length;
+            
+            if (badge) {
+                if (totalAlerts > 0) {
+                    badge.style.display = 'inline-block';
+                    badge.innerHTML = `⚠️ ${totalAlerts}`;
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            return { lowStock: lowStockItems, outOfStock: outOfStockItems };
+        }
+        
+        function getTotalReturns() {
+            return returns.reduce((sum, r) => sum + r.refundAmount, 0);
+        }
+        function deleteCustomer(customerId) {
+            if (confirm("Are you sure you want to delete this customer?")) {
+                customers = customers.filter(c => c.id !== customerId);
+                localStorage.setItem(`pos_customers_${currentShop.id}`, JSON.stringify(customers));
+                if (currentTab === 'customers') renderMainContent();
+                alert("Customer deleted!");
+            }
+        }
+                       function viewCustomerHistory(customerId) {
+            console.log("Viewing history for customer ID:", customerId);
+            const customer = customers.find(c => c.id == customerId);
+            if (!customer) {
+                console.log("Customer not found");
+                return;
+            }
+            
+            console.log("Found customer:", customer.name);
+            console.log("Total transactions:", transactions.length);
+            
+                        const customerTransactions = transactions.filter(t => {
+                return t.customerId && String(t.customerId) === String(customerId);
+            });
+            
+            console.log("Customer transactions found:", customerTransactions.length);
+            
+            const totalSpent = customerTransactions.reduce((sum, t) => sum + t.total, 0);
+            
+            let historyHtml = `
+                <div style="margin-bottom: 20px;">
+                    <h3>${customer.name}</h3>
+                    <p><i class="fas fa-phone"></i> ${customer.phone || 'N/A'}</p>
+                    <p><i class="fas fa-envelope"></i> ${customer.email || 'N/A'}</p>
+                    <p><i class="fas fa-map-marker-alt"></i> ${customer.address || 'N/A'}</p>
+                    <p><i class="fas fa-cedi-sign"></i> Total Spent: GHS ${totalSpent.toFixed(2)}</p>
+                    <p><i class="fas fa-shopping-cart"></i> Total Purchases: ${customerTransactions.length}</p>
+                </div>
+                <hr style="border-color: var(--border); margin: 16px 0;">
+                <h4 style="margin: 16px 0;">Purchase History</h4>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr><th style="text-align:left; padding: 8px; border-bottom: 1px solid var(--border);">Date</th>
+                            <th style="text-align:left; padding: 8px; border-bottom: 1px solid var(--border);">Items</th>
+                            <th style="text-align:left; padding: 8px; border-bottom: 1px solid var(--border);">Total</th>
+                            <th style="text-align:left; padding: 8px; border-bottom: 1px solid var(--border);">Payment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${customerTransactions.map(t => `
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 8px;">${t.date}</td>
+                                    <td style="padding: 8px;">${t.items} items</div></td>
+                                    <td style="padding: 8px;"><strong>GHS ${t.total.toFixed(2)}</strong></td>
+                                    <td style="padding: 8px;">${t.paymentMethod}</td>
+                                </tr>
+                            `).join('')}
+                            ${customerTransactions.length === 0 ? '<tr><td colspan="4" style="text-align:center; padding: 40px;">No purchases yet</td></tr>' : ''}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <div class="modal-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <h2 style="margin-bottom: 24px;">Customer Purchase History</h2>
+                    ${historyHtml}
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="this.closest('.modal').remove()">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
     </script>
 </body>
 </html>
