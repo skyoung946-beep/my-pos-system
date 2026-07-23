@@ -21,7 +21,6 @@
     <!-- Add Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <!-- Add XLSX for Excel export/import -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <!-- Add jsPDF for PDF export -->
@@ -2640,10 +2639,6 @@
                     <span>📦</span>
                     <span>Inventory</span>
                 </div>
-                <div class="nav-item" data-tab="bulkedit" onclick="switchTab('bulkedit'); if(window.innerWidth <= 768) closeMobileMenu();">
-    <span>✏️</span>
-    <span>Bulk Edit</span>
-</div>
                                 <div class="nav-item" data-tab="customers" onclick="switchTab('customers'); if(window.innerWidth <= 768) closeMobileMenu();">
                     <span>👥</span>
                     <span>Customers</span>
@@ -2793,14 +2788,6 @@
                 <label>Minimum Stock Alert</label>
                 <input type="number" id="editProductMinStock" min="0" value="10">
             </div>
-            <div class="form-group">
-    <label>Product Image</label>
-    <input type="file" id="editProductImageInput" accept="image/*" style="padding:8px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); width:100%;">
-    <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
-        <span style="font-size:12px; color:var(--text-secondary);">Current Image:</span>
-        <img id="editProductImagePreview" src="" alt="Preview" style="width:50px; height:50px; object-fit:cover; border-radius:8px; border:1px solid var(--border); display:none;">
-    </div>
-</div>
             
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="closeModal('editProductModal')">Cancel</button>
@@ -2847,11 +2834,6 @@
                 <label>Minimum Stock Alert</label>
                 <input type="number" id="productMinStock" min="0" value="10">
             </div>
-            <div class="form-group">
-    <label>Product Image</label>
-    <input type="file" id="productImageInput" accept="image/*" style="padding:8px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); width:100%;">
-    <div style="margin-top:8px; font-size:12px; color:var(--text-secondary);">Supports JPG, PNG, WEBP (Max 2MB)</div>
-</div>
             
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="closeModal('addProductModal')">Cancel</button>
@@ -3422,9 +3404,8 @@
     <script>
         // ==================== FIREBASE CONFIGURATION (FIX #1 & #5) ====================
         const firebaseConfig = { 
-    databaseURL: "https://enterprise-pos-bf904-default-rtdb.firebaseio.com/",
-    storageBucket: "enterprise-pos-bf904.appspot.com" // 👈 ADD THIS LINE
-};
+            databaseURL: "https://enterprise-pos-bf904-default-rtdb.firebaseio.com/" 
+        };
         
         let db;
         let firebaseAvailable = true;
@@ -4901,207 +4882,105 @@ window.debug = {
             });
         }
 
-        // ==================== UPGRADED PRODUCT FUNCTIONS (WITH IMAGES) ====================
-
-function addSingleProduct() {
-    if (!currentShop) { alert('No business selected'); return; }
-    const name = document.getElementById('productName').value.trim();
-    const category = document.getElementById('productCategory').value.trim();
-    const costPrice = parseFloat(document.getElementById('productCostPrice').value) || 0;
-    const price = parseFloat(document.getElementById('productPrice').value);
-    const stock = parseInt(document.getElementById('productStock').value) || 0;
-    const minStock = parseInt(document.getElementById('productMinStock').value) || 10;
-    const fileInput = document.getElementById('productImageInput');
-    
-    if (!name) { document.getElementById('productNameGroup').classList.add('error'); document.getElementById('productNameError').textContent = 'Product name is required'; return; }
-    if (!category) { alert('Please enter a category'); return; }
-    if (price <= 0) { alert('Please enter a valid selling price'); return; }
-
-    const newProduct = { 
-        id: Date.now(), 
-        name: name, 
-        category: category, 
-        costPrice: costPrice, 
-        price: price, 
-        stock: stock, 
-        minStock: minStock,
-        imageUrl: null // Default empty
-    };
-
-    // Function to save product to DB
-    const saveProduct = (imageUrl) => {
-        if (imageUrl) newProduct.imageUrl = imageUrl;
-        currentShop.inventory.push(newProduct);
-        db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory).then(() => {
-            closeModal('addProductModal');
-            document.getElementById('productImageInput').value = ''; // Clear file input
-            refreshInventory();
-            alert('Product added successfully!');
-        });
-    };
-
-    // Check if an image was uploaded
-    if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        if (file.size > 2 * 1024 * 1024) { alert('Image must be smaller than 2MB.'); return; }
-        uploadProductImage(file, newProduct.id)
-            .then(url => saveProduct(url))
-            .catch(err => { alert('Image upload failed: ' + err.message); });
-    } else {
-        saveProduct(null);
-    }
-}
-
-function editProduct(productId) {
-    if (!currentShop) return;
-    const id = typeof productId === 'string' ? parseInt(productId) : productId;
-    const product = currentShop.inventory.find(p => p.id === id);
-    if (product) {
-        document.getElementById('editProductId').value = product.id;
-        document.getElementById('editProductName').value = product.name;
-        document.getElementById('editProductCategory').value = product.category || '';
-        document.getElementById('editProductCostPrice').value = product.costPrice || 0;
-        document.getElementById('editProductPrice').value = product.price;
-        document.getElementById('editProductStock').value = product.stock;
-        document.getElementById('editProductMinStock').value = product.minStock || 10;
-        
-        // Handle image preview
-        const preview = document.getElementById('editProductImagePreview');
-        if (product.imageUrl) {
-            preview.src = product.imageUrl;
-            preview.style.display = 'block';
-        } else {
-            preview.style.display = 'none';
-        }
-        document.getElementById('editProductModal').classList.add('active');
-    } else {
-        alert('Product not found. Please refresh the page.');
-    }
-}
-
-function updateProduct() {
-    const id = parseInt(document.getElementById('editProductId').value);
-    const name = document.getElementById('editProductName').value.trim();
-    const category = document.getElementById('editProductCategory').value.trim();
-    const costPrice = parseFloat(document.getElementById('editProductCostPrice').value) || 0;
-    const price = parseFloat(document.getElementById('editProductPrice').value);
-    const stock = parseInt(document.getElementById('editProductStock').value) || 0;
-    const minStock = parseInt(document.getElementById('editProductMinStock').value) || 10;
-    const fileInput = document.getElementById('editProductImageInput');
-    
-    if (!name) { alert('Product name is required'); return; }
-    if (!category) { alert('Please enter a category'); return; }
-    if (price <= 0) { alert('Please enter a valid selling price'); return; }
-
-    const productIndex = currentShop.inventory.findIndex(p => p.id === id);
-    if (productIndex === -1) { alert('Product not found'); return; }
-
-    // Store old image URL in case they don't upload a new one
-    const oldImageUrl = currentShop.inventory[productIndex].imageUrl;
-
-    const updateProductData = (imageUrl) => {
-        currentShop.inventory[productIndex].name = name;
-        currentShop.inventory[productIndex].category = category;
-        currentShop.inventory[productIndex].costPrice = costPrice;
-        currentShop.inventory[productIndex].price = price;
-        currentShop.inventory[productIndex].stock = stock;
-        currentShop.inventory[productIndex].minStock = minStock;
-        if (imageUrl !== undefined) currentShop.inventory[productIndex].imageUrl = imageUrl;
-
-        db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory).then(() => {
-            closeModal('editProductModal');
-            document.getElementById('editProductImageInput').value = '';
-            refreshInventory();
-            alert('✅ Product updated successfully!');
-        });
-    };
-
-    if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        if (file.size > 2 * 1024 * 1024) { alert('Image must be smaller than 2MB.'); return; }
-        uploadProductImage(file, id)
-            .then(url => updateProductData(url))
-            .catch(err => { alert('Image upload failed: ' + err.message); });
-    } else {
-        updateProductData(undefined); // Keep the old image
-    }
-}
-
-// ==================== ENHANCED IMAGE UPLOAD HELPER (WITH DEBUGGING) ====================
-function uploadProductImage(file, productId) {
-    return new Promise((resolve, reject) => {
-        console.log("📤 Starting upload for product:", productId, "File:", file.name);
-        
-        // Check if Firebase Storage is available
-        if (!firebaseAvailable || typeof firebase.storage === 'undefined') {
-            console.warn("⚠️ Firebase Storage not available, using Base64 fallback");
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                console.log("✅ Image converted to Base64");
-                resolve(e.target.result);
-            };
-            reader.onerror = (error) => {
-                console.error("❌ Base64 conversion failed:", error);
-                reject(error);
-            };
-            reader.readAsDataURL(file);
-            return;
+        // ==================== INVENTORY FUNCTIONS ====================
+        function addSingleProduct() {
+            if (!currentShop) { alert('No business selected'); return; }
+            const name = document.getElementById('productName').value.trim();
+            const category = document.getElementById('productCategory').value.trim();
+            const costPrice = parseFloat(document.getElementById('productCostPrice').value) || 0;
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const stock = parseInt(document.getElementById('productStock').value) || 0;
+            const minStock = parseInt(document.getElementById('productMinStock').value) || 10;
+            if (!name) { document.getElementById('productNameGroup').classList.add('error'); document.getElementById('productNameError').textContent = 'Product name is required'; return; }
+            if (!category) { alert('Please enter a category'); return; }
+            if (price <= 0) { alert('Please enter a valid selling price'); return; }
+            const newProduct = { id: Date.now(), name: name, category: category, costPrice: costPrice, price: price, stock: stock, minStock: minStock };
+            currentShop.inventory.push(newProduct);
+            db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory).then(() => {
+                closeModal('addProductModal');
+                refreshInventory();
+                alert('Product added successfully!');
+            });
         }
 
-        try {
-            const storageRef = firebase.storage().ref();
-            const imageRef = storageRef.child(`products/${currentShop.id}/${productId}_${Date.now()}_${file.name}`);
+               function editProduct(productId) {
+            if (!currentShop) {
+                errorMonitor.showToast('No business selected', 'error');
+                return;
+            }
             
-            console.log("📁 Uploading to:", imageRef.fullPath);
+            // Make sure productId is treated as number
+            const id = typeof productId === 'string' ? parseInt(productId) : productId;
+            const product = currentShop.inventory.find(p => p.id === id);
             
-            const uploadTask = imageRef.put(file);
-
-            uploadTask.on('state_changed', 
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    console.log(`⏳ Upload progress: ${progress.toFixed(0)}%`);
-                },
-                (error) => {
-                    console.error("❌ Upload failed:", error);
-                    console.error("Error code:", error.code);
-                    console.error("Error message:", error.message);
-                    
-                    // If upload fails, fallback to Base64
-                    console.warn("⚠️ Falling back to Base64 encoding");
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        console.log("✅ Fallback Base64 successful");
-                        resolve(e.target.result);
-                    };
-                    reader.onerror = (readerError) => {
-                        console.error("❌ Fallback also failed:", readerError);
-                        reject(readerError);
-                    };
-                    reader.readAsDataURL(file);
-                },
-                () => {
-                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                        console.log("✅ Upload successful! URL:", downloadURL.substring(0, 50) + "...");
-                        resolve(downloadURL);
-                    }).catch((urlError) => {
-                        console.error("❌ Failed to get download URL:", urlError);
-                        // Fallback to Base64
-                        const reader = new FileReader();
-                        reader.onload = (e) => resolve(e.target.value);
-                        reader.readAsDataURL(file);
-                    });
-                }
-            );
-        } catch (error) {
-            console.error("❌ Upload setup failed:", error);
-            // Fallback to Base64
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
+            if (product) {
+                document.getElementById('editProductId').value = product.id;
+                document.getElementById('editProductName').value = product.name;
+                document.getElementById('editProductCategory').value = product.category || '';
+                document.getElementById('editProductCostPrice').value = product.costPrice || 0;
+                document.getElementById('editProductPrice').value = product.price;
+                document.getElementById('editProductStock').value = product.stock;
+                document.getElementById('editProductMinStock').value = product.minStock || 10;
+                document.getElementById('editProductModal').classList.add('active');
+            } else {
+                errorMonitor.showToast('Product not found in current business. Please refresh the page.', 'error');
+                errorMonitor.captureWarning('Product not found', { productId, shopId: currentShop?.id, shopName: currentShop?.name });
+            }
         }
-    });
-}
+
+                function updateProduct() {
+            const id = parseInt(document.getElementById('editProductId').value);
+            const name = document.getElementById('editProductName').value.trim();
+            const category = document.getElementById('editProductCategory').value.trim();
+            const costPrice = parseFloat(document.getElementById('editProductCostPrice').value) || 0;
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const stock = parseInt(document.getElementById('editProductStock').value) || 0;
+            const minStock = parseInt(document.getElementById('editProductMinStock').value) || 10;
+            
+            if (!name) {
+                errorMonitor.showToast('Product name is required', 'error');
+                return;
+            }
+            if (!category) {
+                errorMonitor.showToast('Please enter a category', 'error');
+                return;
+            }
+            if (isNaN(price) || price <= 0) {
+                errorMonitor.showToast('Please enter a valid selling price', 'error');
+                return;
+            }
+            if (isNaN(stock) || stock < 0) {
+                errorMonitor.showToast('Please enter a valid stock quantity', 'error');
+                return;
+            }
+            
+            // Find the product by ID - ensure we're using the current shop's inventory
+            const productIndex = currentShop.inventory.findIndex(p => p.id === id);
+            
+            if (productIndex !== -1) {
+                // Update the product properties
+                currentShop.inventory[productIndex].name = name;
+                currentShop.inventory[productIndex].category = category;
+                currentShop.inventory[productIndex].costPrice = costPrice;
+                currentShop.inventory[productIndex].price = price;
+                currentShop.inventory[productIndex].stock = stock;
+                currentShop.inventory[productIndex].minStock = minStock;
+                
+                // Save to Firebase for the correct shop
+                const shopRef = db.ref(`${currentShopPath}/inventory`);
+                shopRef.set(currentShop.inventory).then(() => {
+                    closeModal('editProductModal');
+                    refreshInventory();
+                    errorMonitor.showToast('✅ Product updated successfully!', 'success');
+                }).catch((error) => {
+                    console.error('Error updating product:', error);
+                    errorMonitor.showToast('Error updating product. Please check your connection.', 'error');
+                    errorMonitor.captureError(error, 'updateProduct');
+                });
+            } else {
+                errorMonitor.showToast('Product not found. Please refresh and try again.', 'error');
+            }
+        }
 
         function deleteProduct(productId) {
             if (confirm('Are you sure you want to delete this product?')) {
@@ -5866,9 +5745,6 @@ function uploadProductImage(file, productId) {
                 case 'inventory':
                     content.innerHTML = renderInventory();
                     break;
-                    case 'bulkedit':
-    content.innerHTML = renderBulkEdit();
-    break;
                 case 'reports':
                     content.innerHTML = renderReports();
                     setTimeout(() => { initializeCharts(); initReportDateRangePicker(); loadReportData(); }, 100);
@@ -5996,12 +5872,11 @@ function uploadProductImage(file, productId) {
                         <div class="product-grid" id="posProductGrid">
                             ${currentShop.inventory.map(item => `
                                 <div class="product-card ${item.stock === 0 ? 'out-of-stock' : ''}" onclick='addToCart(${JSON.stringify(item)})' data-category="${item.category}" data-name="${item.name.toLowerCase()}">
-    ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:8px; background: var(--bg-tertiary);">` : `<div style="width:100%; height:100px; background: var(--bg-tertiary); border-radius:8px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; color: var(--text-muted);"><i class="fas fa-image" style="font-size:24px;"></i></div>`}
-    <div class="product-category">${item.category}</div>
-    <div class="product-name">${item.name}</div>
-    <div class="product-price">GHS ${item.price}</div>
-    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">${item.stock === 0 ? 'OUT OF STOCK' : `Stock: ${item.stock}`}</div>
-</div>
+                                    <div class="product-category">${item.category}</div>
+                                    <div class="product-name">${item.name}</div>
+                                    <div class="product-price">GHS ${item.price}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">${item.stock === 0 ? 'OUT OF STOCK' : `Stock: ${item.stock}`}</div>
+                                </div>
                             `).join('')}
                         </div>
                     </div>
@@ -6098,8 +5973,8 @@ function uploadProductImage(file, productId) {
                 <div class="card">
                     <div class="inventory-table">
                         <div class="inventory-row header">
-    <div>Image</div><div>Product Name</div><div>Category</div><div>Cost Price</div><div>Selling Price</div><div>Profit/Unit</div><div>Stock Level</div><div>Total Profit</div><div>Actions</div>
-</div>
+                            <div>Product Name</div><div>Category</div><div>Cost Price</div><div>Selling Price</div><div>Profit/Unit</div><div>Stock Level</div><div>Total Profit</div><div>Actions</div>
+                        </div>
                         <div id="inventoryList">
                             ${currentShop.inventory.length === 0 ? `<div style="text-align: center; padding: 40px; color: var(--text-secondary);"><i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 16px;"></i><p>No products yet. Click "Add Product" to get started!</p></div>` :
                                 currentShop.inventory.map(item => {
@@ -6111,16 +5986,12 @@ function uploadProductImage(file, productId) {
                                     const totalProfit = profitPerUnit * stock;
                                     const isOutOfStock = stock === 0;
                                     return `<div class="inventory-row ${isOutOfStock ? 'out-of-stock' : ''}" data-category="${item.category.toLowerCase()}" data-stock="${stock}" data-minstock="${item.minStock}">
-    <div data-label="Image">${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width:40px; height:40px; object-fit:cover; border-radius:6px; border:1px solid var(--border);">` : `<div style="width:40px; height:40px; background:var(--bg-tertiary); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);"><i class="fas fa-box"></i></div>`}</div>
-    <div data-label="Product">${item.name}</div>
-    <div data-label="Category">${item.category}</div>
-    <div data-label="Cost Price">GHS ${costPrice.toFixed(2)}</div>
-    <div data-label="Selling Price">GHS ${price.toFixed(2)}</div>
-    <div data-label="Profit/Unit" style="color: ${profitPerUnit > 0 ? 'var(--success)' : 'var(--danger)'}">GHS ${profitPerUnit.toFixed(2)} (${profitMargin}%)</div>
-    <div data-label="Stock Level"><div style="display: flex; align-items: center; gap: 8px;"><span class="${isOutOfStock ? '' : (stock <= item.minStock ? (stock < item.minStock * 0.5 ? 'critical-stock' : 'low-stock') : '')}">${isOutOfStock ? 'OUT OF STOCK' : stock + ' units'}</span>${!isOutOfStock ? `<div style="width: 60px; height: 4px; background: var(--bg-tertiary); border-radius: 2px;"><div style="width: ${Math.min((stock / item.minStock) * 100, 100)}%; height: 100%; background: ${stock <= item.minStock ? (stock < item.minStock * 0.5 ? 'var(--danger)' : 'var(--warning)') : 'var(--success)'}; border-radius: 2px;"></div></div>` : ''}</div></div>
-    <div data-label="Total Profit" style="color: var(--success);">GHS ${totalProfit.toFixed(2)}</div>
-    <div data-label="Actions"><button class="btn-icon" onclick="editProduct(${item.id})" title="Edit"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="deleteProduct(${item.id})" title="Delete"><i class="fas fa-trash"></i></button><button class="btn-icon" onclick="adjustStock(${item.id})" title="Adjust Stock"><i class="fas fa-adjust"></i></button><button class="btn-icon" onclick="showBulkStockModalForProduct(${item.id})" title="Bulk Procurement"><i class="fas fa-truck"></i></button></div>
-</div>`;
+                                        <div data-label="Product">${item.name}</div><div data-label="Category">${item.category}</div><div data-label="Cost Price">GHS ${costPrice.toFixed(2)}</div><div data-label="Selling Price">GHS ${price.toFixed(2)}</div>
+                                        <div data-label="Profit/Unit" style="color: ${profitPerUnit > 0 ? 'var(--success)' : 'var(--danger)'}">GHS ${profitPerUnit.toFixed(2)} (${profitMargin}%)</div>
+                                        <div data-label="Stock Level"><div style="display: flex; align-items: center; gap: 8px;"><span class="${isOutOfStock ? '' : (stock <= item.minStock ? (stock < item.minStock * 0.5 ? 'critical-stock' : 'low-stock') : '')}">${isOutOfStock ? 'OUT OF STOCK' : stock + ' units'}</span>${!isOutOfStock ? `<div style="width: 60px; height: 4px; background: var(--bg-tertiary); border-radius: 2px;"><div style="width: ${Math.min((stock / item.minStock) * 100, 100)}%; height: 100%; background: ${stock <= item.minStock ? (stock < item.minStock * 0.5 ? 'var(--danger)' : 'var(--warning)') : 'var(--success)'}; border-radius: 2px;"></div></div>` : ''}</div></div>
+                                        <div data-label="Total Profit" style="color: var(--success);">GHS ${totalProfit.toFixed(2)}</div>
+                                        <div data-label="Actions"><button class="btn-icon" onclick="editProduct(${item.id})" title="Edit"><i class="fas fa-edit"></i></button><button class="btn-icon" onclick="deleteProduct(${item.id})" title="Delete"><i class="fas fa-trash"></i></button><button class="btn-icon" onclick="adjustStock(${item.id})" title="Adjust Stock"><i class="fas fa-adjust"></i></button><button class="btn-icon" onclick="showBulkStockModalForProduct(${item.id})" title="Bulk Procurement"><i class="fas fa-truck"></i></button></div>
+                                    </div>`;
                                 }).join('')
                             }
                         </div>
@@ -6291,115 +6162,6 @@ function uploadProductImage(file, productId) {
                 </div>
             `;
         }
-        // ==================== BULK EDITOR FUNCTIONS ====================
-
-function renderBulkEdit() {
-    if (!currentShop) return '<div style="padding:40px;text-align:center;">Please select a business.</div>';
-    
-    let html = `
-        <div class="header">
-            <div class="page-title">
-                <h1>✏️ Bulk Inventory Editor</h1>
-                <p>Edit all product prices, stock, and costs in one table. Changes save instantly.</p>
-            </div>
-            <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                <button class="btn btn-secondary" onclick="applyBulkPriceChange(10)"><i class="fas fa-plus"></i> +10% Price</button>
-                <button class="btn btn-secondary" onclick="applyBulkPriceChange(-10)"><i class="fas fa-minus"></i> -10% Price</button>
-                <button class="btn btn-primary" onclick="saveBulkEdits()"><i class="fas fa-save"></i> Save All Changes</button>
-            </div>
-        </div>
-        <div class="card" style="overflow-x: auto; padding: 10px;">
-            <table style="width:100%; border-collapse:collapse; min-width:800px;">
-                <thead>
-                    <tr style="border-bottom: 2px solid var(--border);">
-                        <th style="padding:10px; text-align:left;">Product</th>
-                        <th style="padding:10px; text-align:left;">Category</th>
-                        <th style="padding:10px; text-align:left;">Cost Price</th>
-                        <th style="padding:10px; text-align:left;">Selling Price</th>
-                        <th style="padding:10px; text-align:left;">Stock</th>
-                        <th style="padding:10px; text-align:left;">Min Stock</th>
-                    </tr>
-                </thead>
-                <tbody id="bulkEditBody">
-    `;
-
-    currentShop.inventory.forEach(item => {
-        html += `
-            <tr style="border-bottom: 1px solid var(--border);">
-                <td><input type="text" class="bulk-input" data-id="${item.id}" data-field="name" value="${item.name}" style="width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:8px;color:var(--text-primary);"></td>
-                <td><input type="text" class="bulk-input" data-id="${item.id}" data-field="category" value="${item.category}" style="width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:8px;color:var(--text-primary);"></td>
-                <td><input type="number" class="bulk-input" data-id="${item.id}" data-field="costPrice" value="${item.costPrice || 0}" step="0.01" style="width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:8px;color:var(--text-primary);"></td>
-                <td><input type="number" class="bulk-input" data-id="${item.id}" data-field="price" value="${item.price}" step="0.01" style="width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:8px;color:var(--text-primary);"></td>
-                <td><input type="number" class="bulk-input" data-id="${item.id}" data-field="stock" value="${item.stock}" step="1" style="width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:8px;color:var(--text-primary);"></td>
-                <td><input type="number" class="bulk-input" data-id="${item.id}" data-field="minStock" value="${item.minStock || 10}" step="1" style="width:100%;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:4px;padding:8px;color:var(--text-primary);"></td>
-            </tr>
-        `;
-    });
-
-    html += `</tbody></table>
-        <div style="margin-top:20px; color: var(--text-secondary); font-size:14px;">
-            💡 Tip: Edit values directly in the cells. Click <strong>"Save All Changes"</strong> to update the main inventory.
-        </div>
-    </div>`;
-    return html;
-}
-
-function saveBulkEdits() {
-    if (!currentShop) return alert('No business selected.');
-    
-    const inputs = document.querySelectorAll('.bulk-input');
-    const updates = {};
-    
-    inputs.forEach(input => {
-        const id = input.dataset.id;
-        const field = input.dataset.field;
-        if (!updates[id]) updates[id] = {};
-        
-        let value = input.value;
-        // Convert numbers properly
-        if (['costPrice', 'price', 'stock', 'minStock'].includes(field)) {
-            value = parseFloat(value);
-            if (isNaN(value) || value < 0) value = 0;
-        }
-        updates[id][field] = value;
-    });
-
-    // Apply updates to the main inventory array
-    currentShop.inventory = currentShop.inventory.map(item => {
-        if (updates[item.id]) {
-            return { ...item, ...updates[item.id] };
-        }
-        return item;
-    });
-
-    // Save to Firebase
-    db.ref(`${currentShopPath}/inventory`).set(currentShop.inventory)
-        .then(() => {
-            alert('✅ All changes saved successfully!');
-            // Optionally refresh the view to show updated values
-            renderMainContent();
-        })
-        .catch(err => {
-            console.error(err);
-            alert('❌ Failed to save. Check your connection.');
-        });
-}
-
-function applyBulkPriceChange(percentage) {
-    const priceInputs = document.querySelectorAll('.bulk-input[data-field="price"]');
-    if (priceInputs.length === 0) {
-        alert('No products found to update.');
-        return;
-    }
-    
-    priceInputs.forEach(input => {
-        const current = parseFloat(input.value) || 0;
-        const newPrice = current * (1 + percentage / 100);
-        input.value = newPrice.toFixed(2);
-    });
-    
-    alert(`✅ Prices ${percentage > 0 ? 'increased' : 'decreased'} by ${Math.abs(percentage)}%. Click "Save All Changes" to finalize.`);
-}
                         function renderReturns() {
             // Load returns from localStorage
             const storedReturns = JSON.parse(localStorage.getItem(`pos_returns_${currentShop?.id}`)) || [];
