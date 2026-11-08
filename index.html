@@ -404,10 +404,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
     <div class="form-group">
       <label>Role</label>
       <select id="staffRole">
-        <option value="cashier">Cashier (POS + Sales + Games)</option>
-        <option value="manager">Manager (Everything except delete)</option>
-        <option value="admin">Admin (Full control)</option>
-        <option value="owner">Owner (Full control)</option>
+        <option value="cashier">Cashier — POS + Games + Send Report</option>
+        <option value="manager">Manager — POS + Inventory + Games</option>
+        <option value="admin">Admin — Full control</option>
+        <option value="owner">Owner — Full control</option>
       </select>
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addStaff()">Save Staff</button>
@@ -509,9 +509,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 
 <script>
 /* =====================================================
-   BizManager POS — v12 (Fix: nav/import/POS after Firebase load)
-   Firebase Project: fourxghana
-   Database: ojoo-amisty-default-rtdb.europe-west1
+   BizManager POS — v13
+   Roles: Cashier=POS+Games+SendReport | Manager=POS+Inventory+Games | Owner/Admin=All
    ===================================================== */
 
 const firebaseConfig = {
@@ -556,23 +555,19 @@ function defaultBiz(name, type) {
   };
 }
 
-/* BOOTSTRAP — ensure valid data shape always, even before Firebase loads */
-var data = JSON.parse(localStorage.getItem('bizmanager_v12')) || {
+var data = JSON.parse(localStorage.getItem('bizmanager_v13')) || {
   businesses: [],
   staff: [{ id: 'owner1', name: 'Owner', pin: '1234', role: 'owner', businessId: null }]
 };
 
-/* Guarantee structure */
 function ensureDataShape() {
   if (!data || typeof data !== 'object') data = { businesses: [], staff: [] };
   if (!Array.isArray(data.businesses)) data.businesses = [];
   if (!Array.isArray(data.staff)) data.staff = [];
-  // Always ensure at least one owner exists
   var hasOwner = data.staff.some(function(s){ return s.role === 'owner' || s.role === 'admin'; });
   if (!hasOwner) {
     data.staff.push({ id: 'owner_auto_' + Date.now(), name: 'Owner', pin: '1234', role: 'owner', businessId: null });
   }
-  // Ensure businesses have proper shape
   data.businesses.forEach(function(b) {
     if (!b.id) b.id = uid();
     if (!b.mode) b.mode = (b.type === 'food' ? 'food' : 'bar');
@@ -587,60 +582,41 @@ function ensureDataShape() {
 }
 ensureDataShape();
 
-/* Firebase live sync — with safety */
 if (firebaseAvailable) {
   let initialSync = true;
-  let syncReceived = false;
   fbDb.ref('bizmanager').on('value', function(snap) {
     const remote = snap.val();
-    syncReceived = true;
-
-    // If cloud has NOTHING, keep local and push up
     if (!remote || (!remote.businesses && !remote.staff)) {
       updateCloudStatus('online');
-      // Push local to cloud (only once)
       if (initialSync && data.businesses.length > 0) {
         fbDb.ref('bizmanager').set(data).then(function() {
           toast('☁️ Local data uploaded to cloud', 'success');
-        }).catch(function(e) {
-          console.warn('Push to cloud failed:', e);
-        });
+        }).catch(function(e) { console.warn('Push to cloud failed:', e); });
       }
       initialSync = false;
       return;
     }
-
-    // Cloud has data → merge carefully
     if (remote.businesses && remote.businesses.length > 0) {
       data.businesses = remote.businesses;
     }
     if (remote.staff && remote.staff.length > 0) {
-      // Only use remote staff if it has an owner
       var remoteHasOwner = remote.staff.some(function(s){ return s.role === 'owner' || s.role === 'admin'; });
-      if (remoteHasOwner) {
-        data.staff = remote.staff;
-      }
+      if (remoteHasOwner) data.staff = remote.staff;
     }
     ensureDataShape();
-    localStorage.setItem('bizmanager_v12', JSON.stringify(data));
+    localStorage.setItem('bizmanager_v13', JSON.stringify(data));
     updateCloudStatus('online');
-
     if (initialSync) {
-      var msg = '☁️ Synced from cloud';
-      if (data.businesses.length === 0 && data.staff.length > 0) {
-        msg = '☁️ Staff synced (no businesses yet)';
-      }
-      toast(msg, 'success');
+      toast('☁️ Synced from cloud', 'success');
       initialSync = false;
     }
-
-    // Re-render if logged in
     if (currentUser) {
-      // Preserve current business if still exists
       if (currentBizId && !data.businesses.find(function(b){ return b.id === currentBizId; })) {
         currentBizId = data.businesses[0] ? data.businesses[0].id : null;
         currentMode = currentBiz() ? currentBiz().mode : 'bar';
       }
+      // Re-validate current tab is allowed for this role
+      enforceAllowedTab();
       render();
     }
   }, function(error) {
@@ -652,7 +628,7 @@ if (firebaseAvailable) {
 
 var currentUser = null;
 var currentBizId = null;
-var currentTab = 'dashboard';
+var currentTab = 'pos';
 var currentMode = 'bar';
 var cart = [];
 var paymentMethod = 'cash';
@@ -666,7 +642,7 @@ var invSearchQuery = '';
 
 function save() {
   ensureDataShape();
-  localStorage.setItem('bizmanager_v12', JSON.stringify(data));
+  localStorage.setItem('bizmanager_v13', JSON.stringify(data));
   if (firebaseAvailable && fbDb) {
     updateCloudStatus('syncing');
     fbDb.ref('bizmanager').set(data)
@@ -722,9 +698,7 @@ function forcePushToCloud() {
   fbDb.ref('bizmanager').set(data).then(function() {
     toast('Pushed to cloud ✅', 'success');
     closeModal('debugModal');
-  }).catch(function(e) {
-    toast('Push failed: ' + e.message, 'error');
-  });
+  }).catch(function(e) { toast('Push failed: ' + e.message, 'error'); });
 }
 function forcePullFromCloud() {
   if (!firebaseAvailable) return toast('Firebase not connected', 'error');
@@ -733,16 +707,14 @@ function forcePullFromCloud() {
     if (remote) {
       data = remote;
       ensureDataShape();
-      localStorage.setItem('bizmanager_v12', JSON.stringify(data));
+      localStorage.setItem('bizmanager_v13', JSON.stringify(data));
       toast('Pulled from cloud ✅', 'success');
       closeModal('debugModal');
-      if (currentUser) render();
+      if (currentUser) { enforceAllowedTab(); render(); }
     } else {
       toast('Cloud is empty', 'info');
     }
-  }).catch(function(e) {
-    toast('Pull failed: ' + e.message, 'error');
-  });
+  }).catch(function(e) { toast('Pull failed: ' + e.message, 'error'); });
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -764,13 +736,51 @@ function yesterdayKey() { var d = new Date(); d.setDate(d.getDate()-1); return d
 function activeInv(biz) { return biz.mode === 'food' ? biz.food.inventory : biz.inventory; }
 function activeSales(biz) { return biz.mode === 'food' ? biz.food.sales : biz.sales; }
 
+/* ============================================================
+   PERMISSIONS — this is where roles are enforced
+   ============================================================
+   Cashier → pos, game, send_report
+   Manager → pos, inventory, game, send_report
+   Owner/Admin → everything
+   ============================================================ */
 function can(action) {
   if (!currentUser) return false;
   var role = currentUser.role;
+
+  // Owner and Admin have full access
   if (role === 'owner' || role === 'admin') return true;
-  if (role === 'manager') return action !== 'delete_business';
-  if (role === 'cashier') return ['pos','view_inventory','view_sales','play_game','view_dashboard','send_report'].indexOf(action) !== -1;
+
+  // Manager: POS + Inventory + Games (+ send report from POS)
+  if (role === 'manager') {
+    var managerAllowed = ['pos', 'inventory', 'play_game', 'send_report'];
+    return managerAllowed.indexOf(action) !== -1;
+  }
+
+  // Cashier: POS + Games + Send Report ONLY
+  if (role === 'cashier') {
+    var cashierAllowed = ['pos', 'play_game', 'send_report'];
+    return cashierAllowed.indexOf(action) !== -1;
+  }
+
   return false;
+}
+
+/* Tab allowed check — used when we restore user session */
+function isTabAllowed(tab) {
+  if (!currentUser) return false;
+  var role = currentUser.role;
+  if (role === 'owner' || role === 'admin') return true;
+  if (role === 'manager') return ['pos', 'inventory', 'game'].indexOf(tab) !== -1;
+  if (role === 'cashier') return ['pos', 'game'].indexOf(tab) !== -1;
+  return false;
+}
+
+/* If current tab isn't allowed for the role, switch to POS */
+function enforceAllowedTab() {
+  if (!currentUser) return;
+  if (!isTabAllowed(currentTab)) {
+    currentTab = 'pos';
+  }
 }
 
 function autoImage(name, mode) {
@@ -851,13 +861,20 @@ function submitPin() {
     currentBizId = data.businesses[0].id;
     currentMode = data.businesses[0].mode;
   }
-  currentTab = 'dashboard';
+
+  // Set default tab based on role
+  if (staff.role === 'cashier' || staff.role === 'manager') {
+    currentTab = 'pos';
+  } else {
+    currentTab = 'dashboard';
+  }
+
   toast('Welcome back, ' + staff.name + '!', 'success');
   render();
 }
 function logout() {
   currentUser = null; currentBizId = null; cart = []; pinBuffer = ''; currentMode = 'bar';
-  posSearchQuery = ''; invSearchQuery = ''; currentTab = 'dashboard';
+  posSearchQuery = ''; invSearchQuery = ''; currentTab = 'pos';
   document.getElementById('app').classList.remove('active');
   showLanding();
   toast('Logged out', 'info');
@@ -918,7 +935,6 @@ function deleteBusiness(id) {
   render();
 }
 
-/* ==================== IMPORT (works even with no business) ==================== */
 function openImport() {
   document.getElementById('importFile').value = '';
   document.getElementById('importLabel').value = '';
@@ -936,15 +952,11 @@ function doImport() {
     catch(err) { return toast('Not valid JSON: ' + err.message, 'error'); }
 
     try {
-      // Detect shape
       var items = Array.isArray(parsed) ? parsed : (parsed.businesses || parsed.products || parsed.inventory || [parsed]);
 
-      // CASE 1: Full backup (has businesses array)
       if (parsed.businesses && Array.isArray(parsed.businesses)) {
         data.businesses = parsed.businesses;
-        if (parsed.staff && Array.isArray(parsed.staff)) {
-          data.staff = parsed.staff;
-        }
+        if (parsed.staff && Array.isArray(parsed.staff)) data.staff = parsed.staff;
         ensureDataShape();
         currentBizId = data.businesses[0] ? data.businesses[0].id : null;
         currentMode = currentBiz() ? currentBiz().mode : 'bar';
@@ -955,20 +967,17 @@ function doImport() {
         return;
       }
 
-      // CASE 2: Products list — needs a business to import into
-      // Auto-create one if none
       if (!currentBiz()) {
         var autoBiz = defaultBiz('Imported Shop', 'bar');
         data.businesses.push(autoBiz);
         currentBizId = autoBiz.id;
         currentMode = autoBiz.mode;
-        toast('Created business "Imported Shop" to hold imported products', 'info');
+        toast('Created business "Imported Shop"', 'info');
       }
 
       var biz = currentBiz();
       var inv = activeInv(biz);
-      var added = 0;
-      var updated = 0;
+      var added = 0, updated = 0;
 
       items.forEach(function(rawItem) {
         var np = normalizeProduct(rawItem, currentMode);
@@ -1008,7 +1017,6 @@ function doImport() {
 
 function normalizeProduct(p, mode) {
   p = p || {};
-  // Handle TableConvert format {"Category,Cost Price,...": "BEVERAGES,3.80,..."}
   if (Object.keys(p).length === 1 && Object.keys(p)[0].indexOf(',') !== -1) {
     var header = Object.keys(p)[0];
     var value = String(p[header] || '');
@@ -1018,14 +1026,12 @@ function normalizeProduct(p, mode) {
     keys.forEach(function(k, i){ obj[k] = vals[i]; });
     p = obj;
   }
-
   var price = p.price != null ? p.price : (p.sellingPrice != null ? p.sellingPrice : (p['selling price'] != null ? p['selling price'] : 0));
   var cost = p.cost != null ? p.cost : (p.costPrice != null ? p.costPrice : (p['cost price'] != null ? p['cost price'] : 0));
   var stock = p.stock != null ? p.stock : (p.quantity != null ? p.quantity : 0);
   var min = p.minStock != null ? p.minStock : (p['min stock'] != null ? p['min stock'] : 5);
   var name = p.name != null ? p.name : (p['product name'] != null ? p['product name'] : 'Unnamed Product');
   var cat = p.category != null ? p.category : (mode === 'food' ? 'Food' : 'General');
-
   return {
     id: uid(),
     name: String(name).trim(),
@@ -1065,6 +1071,7 @@ function previewImage(input) {
   reader.readAsDataURL(file);
 }
 function openProductModal(editId) {
+  if (!can('manage_inventory')) return toast('No permission', 'error');
   if (!currentBiz()) return toast('Create or import a business first', 'warning');
   tempImage = null;
   var img = document.getElementById('imgPreview');
@@ -1219,6 +1226,7 @@ function checkout() {
 }
 
 function openAudit(productId) {
+  if (!can('manage_inventory')) return toast('No permission', 'error');
   var biz = currentBiz(); if (!biz) return;
   var p = activeInv(biz).find(function(x){ return x.id === productId; });
   if (!p) return;
@@ -1339,7 +1347,11 @@ function buildReportText() {
   }
   return text;
 }
-function openSendModal() { if (currentBiz()) openModal('sendModal'); }
+function openSendModal() {
+  if (!can('send_report')) return toast('No permission', 'error');
+  if (!currentBiz()) return toast('No business selected', 'warning');
+  openModal('sendModal');
+}
 function sendViaWhatsApp() {
   try {
     var biz = currentBiz();
@@ -1390,6 +1402,7 @@ function openReportSettings() {
 }
 function saveReportSettings() {
   var biz = currentBiz(); if (!biz) return;
+  if (!can('manage_business') && !can('send_report')) return toast('No permission', 'error');
   biz.reportPhone = document.getElementById('reportPhone').value.replace(/\D/g, '');
   biz.reportEmail = document.getElementById('reportEmail').value.trim();
   save();
@@ -1445,31 +1458,58 @@ function renderShopList() {
   }).join('');
 }
 
+/* ============================================================
+   NAVIGATION — this is the main role gate
+   ============================================================ */
 function renderNav() {
+  if (!currentUser) return;
   var biz = currentBiz();
-  var lowCount = biz ? activeInv(biz).filter(function(p){ return p.stock <= p.minStock; }).length : 0;
+  var role = currentUser.role;
   var items = [];
-  items.push({tab:'dashboard',icon:'fa-chart-pie',label:'Dashboard'});
-  if (can('pos')) items.push({tab:'pos',icon:'fa-cash-register',label:'Point of Sale'});
-  if (can('view_sales') || can('pos')) items.push({tab:'sales',icon:'fa-receipt',label:'Sales History'});
-  if (can('view_inventory') || can('manage_inventory')) items.push({tab:'inventory',icon:'fa-boxes',label:'Inventory',badge:lowCount});
-  if (can('view_inventory') || can('manage_inventory')) items.push({tab:'audit',icon:'fa-clipboard-check',label:'Stock Audit'});
-  if (can('manage_staff')) items.push({tab:'staff',icon:'fa-users',label:'Staff'});
-  if (can('view_reports')) items.push({tab:'reports',icon:'fa-chart-bar',label:'Reports'});
-  if (can('play_game')) items.push({tab:'game',icon:'fa-gamepad',label:'Games'});
-  if (can('manage_business') || can('manage_staff')) items.push({tab:'data',icon:'fa-database',label:'Import / Export'});
-  if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'owner')) {
+
+  // Cashier — POS + Games ONLY
+  if (role === 'cashier') {
+    items.push({tab:'pos',icon:'fa-cash-register',label:'Point of Sale'});
+    items.push({tab:'game',icon:'fa-gamepad',label:'Games'});
+  }
+
+  // Manager — POS + Inventory + Games
+  else if (role === 'manager') {
+    var lowCount = biz ? activeInv(biz).filter(function(p){ return p.stock <= p.minStock; }).length : 0;
+    items.push({tab:'pos',icon:'fa-cash-register',label:'Point of Sale'});
+    items.push({tab:'inventory',icon:'fa-boxes',label:'Inventory',badge:lowCount});
+    items.push({tab:'game',icon:'fa-gamepad',label:'Games'});
+  }
+
+  // Owner / Admin — Everything
+  else {
+    var lowCount2 = biz ? activeInv(biz).filter(function(p){ return p.stock <= p.minStock; }).length : 0;
+    items.push({tab:'dashboard',icon:'fa-chart-pie',label:'Dashboard'});
+    items.push({tab:'pos',icon:'fa-cash-register',label:'Point of Sale'});
+    items.push({tab:'sales',icon:'fa-receipt',label:'Sales History'});
+    items.push({tab:'inventory',icon:'fa-boxes',label:'Inventory',badge:lowCount2});
+    items.push({tab:'audit',icon:'fa-clipboard-check',label:'Stock Audit'});
+    items.push({tab:'staff',icon:'fa-users',label:'Staff'});
+    items.push({tab:'reports',icon:'fa-chart-bar',label:'Reports'});
+    items.push({tab:'game',icon:'fa-gamepad',label:'Games'});
+    items.push({tab:'data',icon:'fa-database',label:'Import / Export'});
     items.push({tab:'admin',icon:'fa-shield-halved',label:'Admin'});
   }
+
   document.getElementById('nav').innerHTML = items.map(function(i) {
     return '<div class="nav-item ' + (currentTab === i.tab ? 'active' : '') + '" onclick="switchTab(\'' + i.tab + '\')">' +
       '<i class="fas ' + i.icon + '"></i> ' + i.label +
       (i.badge ? '<span class="nav-badge">' + i.badge + '</span>' : '') + '</div>';
   }).join('');
+
   document.getElementById('addBizBtn').style.display = can('manage_business') ? 'inline-flex' : 'none';
 }
 
 function switchTab(tab) {
+  if (!isTabAllowed(tab)) {
+    toast('No permission for that tab', 'error');
+    return;
+  }
   currentTab = tab;
   if (tab === 'game') initActiveGame();
   if (tab === 'admin') openAdminPanel();
@@ -1479,19 +1519,27 @@ function switchTab(tab) {
 function renderMain() {
   var main = document.getElementById('main');
   var biz = currentBiz();
+
   if (!biz) {
     main.innerHTML = '<div class="empty-state" style="padding:80px 20px;">' +
       '<i class="fas fa-store"></i>' +
       '<h2 style="font-size:20px;margin-bottom:8px;color:var(--text);">Welcome, ' + (currentUser ? currentUser.name : 'User') + '</h2>' +
-      '<p style="margin:6px 0 20px;">Create your first business or import data to get started</p>' +
+      '<p style="margin:6px 0 20px;">No business yet</p>' +
       '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
       (can('manage_business') ? '<button class="btn btn-primary" onclick="openModal(\'bizModal\')"><i class="fas fa-plus"></i> Add Business</button>' : '') +
-      '<button class="btn btn-secondary" onclick="openImport()"><i class="fas fa-file-import"></i> Import Data</button>' +
-      '</div></div>';
+      (can('manage_business') ? '<button class="btn btn-secondary" onclick="openImport()"><i class="fas fa-file-import"></i> Import Data</button>' : '') +
+      '</div>' +
+      (currentUser && (currentUser.role === 'cashier' || currentUser.role === 'manager') ?
+        '<p style="margin-top:20px;font-size:12px;color:var(--text3);">Ask your admin to create or import a business</p>' : '') +
+      '</div>';
     return;
   }
   currentMode = biz.mode;
   var content = '';
+
+  // Enforce tab permission before rendering
+  if (!isTabAllowed(currentTab)) currentTab = 'pos';
+
   if (currentTab === 'dashboard') content = renderDashboardHTML(biz);
   else if (currentTab === 'pos') content = renderPOSHTML(biz);
   else if (currentTab === 'inventory') content = renderInventoryHTML(biz);
@@ -1502,6 +1550,7 @@ function renderMain() {
   else if (currentTab === 'data') content = renderDataHTML(biz);
   else if (currentTab === 'game') content = renderGameHTML();
   else if (currentTab === 'admin') content = '<div class="empty-state"><i class="fas fa-shield-halved"></i>Admin panel opened — check the modal.</div>';
+
   main.innerHTML = content;
   if (currentTab === 'pos') renderCart();
   if (currentTab === 'game') renderActiveGame();
@@ -1569,6 +1618,7 @@ function renderDashboardHTML(biz) {
       '<button class="btn btn-ghost btn-sm" onclick="switchTab(\'sales\')">View all →</button></div>' + recentSales + '</div>';
 }
 
+/* POS — includes the Send Report button so cashiers can use it */
 function renderPOSHTML(biz) {
   var inv = activeInv(biz);
   var q = (posSearchQuery || '').toLowerCase().trim();
@@ -1585,11 +1635,15 @@ function renderPOSHTML(biz) {
       'oninput="posSearchQuery=this.value;render();setTimeout(function(){var el=document.getElementById(\'posSearch\');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},0);">' +
     (posSearchQuery ? '<button class="clear-search" onclick="posSearchQuery=\'\';render();"><i class="fas fa-times"></i></button>' : '') +
   '</div>';
+
   var productsHtml = '';
   if (inv.length === 0) {
     productsHtml = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-box-open"></i>No products yet.' +
-      '<br><button class="btn btn-primary" style="margin-top:14px;" onclick="openImport()"><i class="fas fa-file-import"></i> Import Products</button>' +
-      (can('manage_inventory') ? ' <button class="btn btn-secondary" style="margin-top:14px;" onclick="openProductModal()"><i class="fas fa-plus"></i> Add Manually</button>' : '') + '</div>';
+      (can('manage_inventory') ?
+        '<br><button class="btn btn-primary" style="margin-top:14px;" onclick="openImport()"><i class="fas fa-file-import"></i> Import Products</button>' +
+        ' <button class="btn btn-secondary" style="margin-top:14px;" onclick="openProductModal()"><i class="fas fa-plus"></i> Add Manually</button>' :
+        '<br><p style="margin-top:14px;color:var(--text3);font-size:12px;">Ask your manager to add products</p>') +
+      '</div>';
   } else if (filtered.length === 0) {
     productsHtml = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-search"></i>No products match "' + posSearchQuery + '"' +
       '<br><button class="btn btn-secondary" style="margin-top:14px;" onclick="posSearchQuery=\'\';render();">Clear search</button></div>';
@@ -1603,8 +1657,15 @@ function renderPOSHTML(biz) {
         '<div class="product-stock">Stock: ' + p.stock + '</div></div>';
     }).join('');
   }
+
+  // Send Report button visible to cashier + manager + owner/admin
+  var reportBtn = can('send_report')
+    ? '<button class="btn btn-whatsapp" onclick="openSendModal()"><i class="fas fa-paper-plane"></i> Send Report</button>'
+    : '';
+
   return '<div class="header"><div><h1>Point of Sale</h1><p>' + biz.name + ' · ' + (currentMode === 'food' ? 'Food' : 'Bar') +
-    (q ? ' · ' + filtered.length + ' of ' + inv.length : '') + '</p></div></div>' +
+    (q ? ' · ' + filtered.length + ' of ' + inv.length : '') + '</p></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + reportBtn + '</div></div>' +
     searchHtml +
     '<div class="pos-grid">' +
       '<div class="product-grid">' + productsHtml + '</div>' +
@@ -1646,6 +1707,7 @@ function renderCart() {
 }
 
 function renderInventoryHTML(biz) {
+  if (!can('inventory')) return '<div class="empty-state"><i class="fas fa-lock"></i>No permission</div>';
   var inv = activeInv(biz);
   var q = (invSearchQuery || '').toLowerCase().trim();
   var cats = ['all'];
@@ -1673,9 +1735,9 @@ function renderInventoryHTML(biz) {
     tableHtml = '<div class="empty-state"><i class="fas fa-box-open"></i>' +
       (q ? 'No products match "' + invSearchQuery + '"' : 'No products yet') +
       (q ? '<br><button class="btn btn-secondary" style="margin-top:14px;" onclick="invSearchQuery=\'\';render();">Clear search</button>' :
-           '<br><button class="btn btn-primary" style="margin-top:14px;" onclick="openImport()"><i class="fas fa-file-import"></i> Import Products</button>') + '</div>';
+           (can('manage_inventory') ? '<br><button class="btn btn-primary" style="margin-top:14px;" onclick="openImport()"><i class="fas fa-file-import"></i> Import Products</button>' : '')) + '</div>';
   } else {
-    tableHtml = '<div style="overflow-x:auto;"><table class="table"><thead><tr><th></th><th>Product</th><th>Category</th><th>Cost</th><th>Selling</th><th>Margin</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+    tableHtml = '<div style="overflow-x:auto;"><table class="table"><thead><tr><th></th><th>Product</th><th>Category</th><th>Cost</th><th>Selling</th><th>Margin</th><th>Stock</th><th>Status</th>' + (can('manage_inventory') ? '<th>Actions</th>' : '') + '</tr></thead><tbody>';
     filtered.forEach(function(p) {
       var status='In Stock',cls='badge-success',rowCls='';
       if (p.stock === 0) { status='Out';cls='badge-danger';rowCls='row-low'; }
@@ -1690,11 +1752,12 @@ function renderInventoryHTML(biz) {
         '<td style="color:' + (margin>=0?'var(--success)':'var(--danger)') + ';">' + margin.toFixed(0) + '%</td>' +
         '<td><strong style="color:' + (p.stock<=p.minStock?'var(--danger)':'inherit') + ';">' + p.stock + '</strong></td>' +
         '<td><span class="badge ' + cls + '">' + status + '</span></td>' +
-        '<td><div class="action-btns">' +
+        (can('manage_inventory') ? '<td><div class="action-btns">' +
           '<button class="btn btn-secondary btn-sm btn-icon" title="Edit" onclick="openProductModal(\'' + p.id + '\')"><i class="fas fa-pen"></i></button>' +
           '<button class="btn btn-secondary btn-sm btn-icon" title="Audit" onclick="openAudit(\'' + p.id + '\')"><i class="fas fa-clipboard-check"></i></button>' +
           '<button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteProduct(\'' + p.id + '\')"><i class="fas fa-trash"></i></button>' +
-        '</div></td></tr>';
+        '</div></td>' : '') +
+        '</tr>';
     });
     tableHtml += '</tbody></table></div>';
   }
@@ -1755,10 +1818,8 @@ function renderSalesHTML(biz) {
           '<span class="badge badge-accent">' + s.payment + '</span></div></div>' +
         '<table class="table"><thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead><tbody>' + itemsHtml + '</tbody></table></div>';
     }).join('');
-  var reportBtn = can('send_report') ? '<button class="btn btn-whatsapp" onclick="openSendModal()"><i class="fas fa-paper-plane"></i> Send Report</button>' : '';
   return '<div class="header"><div><h1>Sales History</h1><p>' + sales.length + ' sales</p></div>' +
-    '<div style="display:flex;gap:8px;">' + reportBtn +
-    '<button class="btn btn-secondary" onclick="exportData()"><i class="fas fa-download"></i> Export</button></div></div>' +
+    '<button class="btn btn-secondary" onclick="exportData()"><i class="fas fa-download"></i> Export</button></div>' +
     '<div class="card">' + content + '</div>';
 }
 
@@ -1835,8 +1896,8 @@ function renderDataHTML(biz) {
       '</div>';
     }).join('');
   var cloudInfo = firebaseAvailable
-    ? '<div style="background:var(--success-soft);border-radius:10px;padding:12px;font-size:12.5px;color:var(--success);margin-bottom:14px;"><i class="fas fa-cloud"></i> <strong>Cloud sync active</strong> — connected to Firebase project <strong>' + firebaseConfig.projectId + '</strong>. Data syncs across all devices.</div>'
-    : '<div style="background:var(--warning-soft);border-radius:10px;padding:12px;font-size:12.5px;color:var(--warning);margin-bottom:14px;"><i class="fas fa-triangle-exclamation"></i> <strong>Offline mode</strong> — Firebase not configured. Data saves locally only.</div>';
+    ? '<div style="background:var(--success-soft);border-radius:10px;padding:12px;font-size:12.5px;color:var(--success);margin-bottom:14px;"><i class="fas fa-cloud"></i> <strong>Cloud sync active</strong> — connected to Firebase project <strong>' + firebaseConfig.projectId + '</strong>.</div>'
+    : '<div style="background:var(--warning-soft);border-radius:10px;padding:12px;font-size:12.5px;color:var(--warning);margin-bottom:14px;"><i class="fas fa-triangle-exclamation"></i> <strong>Offline mode</strong> — Firebase not configured.</div>';
   return '<div class="header"><div><h1>Import / Export</h1></div></div>' +
     cloudInfo +
     '<div class="card"><div style="font-weight:600;margin-bottom:6px;font-size:15px;"><i class="fas fa-download" style="color:var(--accent);"></i> Export</div>' +
@@ -1848,6 +1909,7 @@ function renderDataHTML(biz) {
     '<div class="card"><div style="font-weight:600;margin-bottom:14px;font-size:15px;"><i class="fas fa-history"></i> Import History</div>' + importsHtml + '</div>';
 }
 
+/* Games */
 function initActiveGame() {
   if (activeGame === 'snake') initSnake();
   else if (activeGame === '2048') init2048();
@@ -2162,7 +2224,7 @@ function drawPuzzle(area) {
 }
 
 function exportData() {
-  var payload = {_meta:{app:'BizManager POS',version:12,exportedAt:new Date().toISOString()}, businesses: data.businesses, staff: data.staff};
+  var payload = {_meta:{app:'BizManager POS',version:13,exportedAt:new Date().toISOString()}, businesses: data.businesses, staff: data.staff};
   var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -2187,8 +2249,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔴 Firebase OFFLINE');
       }
     });
-  } else {
-    console.warn('⚠️ Firebase not available — running in local mode');
   }
 });
 </script>
