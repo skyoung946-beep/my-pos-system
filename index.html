@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#ffffff">
 <title>BizManager POS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<!-- Firebase Realtime Database -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <style>
@@ -272,7 +271,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 </head>
 <body>
 
-<!-- LANDING -->
 <div class="landing" id="landingScreen">
   <div class="landing-content">
     <div class="landing-logo">B</div>
@@ -288,7 +286,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
   </div>
 </div>
 
-<!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <button class="login-back" onclick="showLanding()"><i class="fas fa-arrow-left"></i> Back</button>
@@ -314,7 +311,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
   </div>
 </div>
 
-<!-- APP -->
 <div class="app" id="app">
   <aside class="sidebar">
     <div class="logo">
@@ -347,7 +343,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
   <main class="main" id="main"></main>
 </div>
 
-<!-- Cloud status -->
 <div class="cloud-status" id="cloudStatus">
   <div class="dot"></div>
   <span id="cloudStatusText">Connecting…</span>
@@ -355,7 +350,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<!-- MODALS -->
 <div class="modal" id="bizModal">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('bizModal')"><i class="fas fa-times"></i></button>
@@ -507,13 +501,15 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 
 <script>
 /* =====================================================
-   BizManager POS — v10 (FourxGhana Firebase project)
+   BizManager POS — v11
+   Firebase Project: fourxghana
+   Database: ojoo-amisty-default-rtdb.europe-west1
    ===================================================== */
 
 const firebaseConfig = {
   apiKey: "AIzaSyDVurZaFsq9PtWzI_sDv3iCSVeMoKk-wpY",
   authDomain: "fourxghana.firebaseapp.com",
-  databaseURL: "https://fourxghana-default-rtdb.firebaseio.com",
+  databaseURL: "https://ojoo-amisty-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "fourxghana",
   storageBucket: "fourxghana.firebasestorage.app",
   messagingSenderId: "120782834199",
@@ -530,16 +526,14 @@ try {
     }
     fbDb = firebase.database();
     firebaseAvailable = true;
-    console.log('✅ Firebase connected to project:', firebaseConfig.projectId);
+    console.log('✅ Firebase connected:', firebaseConfig.databaseURL);
   } else {
     throw new Error('Firebase SDK not loaded');
   }
 } catch (e) {
-  console.warn('⚠️ Firebase unavailable, using localStorage fallback:', e.message);
+  console.warn('⚠️ Firebase unavailable, using localStorage:', e.message);
   firebaseAvailable = false;
 }
-
-/* ==================== DATA ==================== */
 
 function defaultBiz(name, type) {
   return {
@@ -552,12 +546,11 @@ function defaultBiz(name, type) {
   };
 }
 
-var data = JSON.parse(localStorage.getItem('bizmanager_v10')) || {
+var data = JSON.parse(localStorage.getItem('bizmanager_v11')) || {
   businesses: [],
   staff: [{ id: 'owner1', name: 'Owner', pin: '1234', role: 'owner', businessId: null }]
 };
 
-// Live sync from Firebase
 if (firebaseAvailable) {
   let initialSync = true;
   fbDb.ref('bizmanager').on('value', function(snap) {
@@ -565,7 +558,7 @@ if (firebaseAvailable) {
     if (remote && (remote.businesses || remote.staff)) {
       if (remote.businesses && remote.businesses.length > 0) {
         data = remote;
-        localStorage.setItem('bizmanager_v10', JSON.stringify(data));
+        localStorage.setItem('bizmanager_v11', JSON.stringify(data));
         if (currentUser) render();
         updateCloudStatus('online');
       } else {
@@ -577,7 +570,6 @@ if (firebaseAvailable) {
       }
     } else {
       updateCloudStatus('online');
-      // If cloud is empty but we have local data, push it up
       if (initialSync && data.businesses.length > 0) {
         fbDb.ref('bizmanager').set(data).then(function() {
           toast('☁️ Data uploaded to cloud', 'success');
@@ -588,7 +580,7 @@ if (firebaseAvailable) {
   }, function(error) {
     console.error('Firebase listener error:', error);
     updateCloudStatus('offline');
-    toast('⚠️ Cloud sync error: ' + error.code, 'warning');
+    toast('⚠️ Cloud error: ' + error.code, 'warning');
   });
 }
 
@@ -606,9 +598,8 @@ var activeGame = 'snake';
 var posSearchQuery = '';
 var invSearchQuery = '';
 
-/* Save to local + cloud */
 function save() {
-  localStorage.setItem('bizmanager_v10', JSON.stringify(data));
+  localStorage.setItem('bizmanager_v11', JSON.stringify(data));
   if (firebaseAvailable && fbDb) {
     updateCloudStatus('syncing');
     fbDb.ref('bizmanager').set(data)
@@ -639,7 +630,6 @@ function updateCloudStatus(state) {
   }
 }
 
-/* ==================== UTILITIES ==================== */
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function money(n) {
   var cur = currentBiz() ? currentBiz().currency : 'GH₵';
@@ -811,7 +801,6 @@ function deleteBusiness(id) {
   render();
 }
 
-/* Import / Export */
 function splitCsvRow(headers, value) {
   var h = headers.split(',').map(function(s){ return s.trim().toLowerCase(); });
   var v = String(value == null ? '' : value).split(',').map(function(s){ return s.trim(); });
@@ -1718,7 +1707,6 @@ function renderDataHTML(biz) {
     '<div class="card"><div style="font-weight:600;margin-bottom:14px;font-size:15px;"><i class="fas fa-history"></i> Import History</div>' + importsHtml + '</div>';
 }
 
-/* Games */
 function initActiveGame() {
   if (activeGame === 'snake') initSnake();
   else if (activeGame === '2048') init2048();
@@ -2033,7 +2021,7 @@ function drawPuzzle(area) {
 }
 
 function exportData() {
-  var payload = {_meta:{app:'BizManager POS',version:10,exportedAt:new Date().toISOString()}, businesses: data.businesses, staff: data.staff};
+  var payload = {_meta:{app:'BizManager POS',version:11,exportedAt:new Date().toISOString()}, businesses: data.businesses, staff: data.staff};
   var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -2058,6 +2046,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔴 Firebase OFFLINE');
       }
     });
+  } else {
+    console.warn('⚠️ Firebase not available — running in local mode');
   }
 });
 </script>
