@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#ffffff">
 <title>BizManager POS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<!-- Firebase (Realtime Database, compat build for easy use) -->
+<!-- Firebase Realtime Database -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <style>
@@ -261,12 +261,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 .send-option .send-title{font-weight:600;font-size:14px}
 .send-option .send-sub{font-size:12px;color:var(--text2);margin-top:2px}
 
-/* Cloud status indicator */
-.cloud-status{
-  position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);
-  border-radius:12px;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:8px;
-  box-shadow:var(--shadow-lg);z-index:500;transition:all .3s;
-}
+.cloud-status{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg);z-index:500;transition:all .3s}
 .cloud-status .dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
 .cloud-status.offline .dot{background:var(--danger);animation:none}
 .cloud-status.syncing .dot{background:var(--warning)}
@@ -512,20 +507,17 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 
 <script>
 /* =====================================================
-   BizManager POS — v9 (Firebase Realtime Database)
+   BizManager POS — v10 (FourxGhana Firebase project)
    ===================================================== */
 
-/* ==================== FIREBASE CONFIG ==================== */
-/* ⚠️ REPLACE with your real config from
-   Firebase Console → Project Settings → Your apps → Web */
 const firebaseConfig = {
-  apiKey: "AIzaSyDummy_Replace_With_Your_Actual_API_Key",
-  authDomain: "enterprise-pos-bf904.firebaseapp.com",
-  databaseURL: "https://enterprise-pos-bf904-default-rtdb.firebaseio.com",
-  projectId: "enterprise-pos-bf904",
-  storageBucket: "enterprise-pos-bf904.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000000000"
+  apiKey: "AIzaSyDVurZaFsq9PtWzI_sDv3iCSVeMoKk-wpY",
+  authDomain: "fourxghana.firebaseapp.com",
+  databaseURL: "https://fourxghana-default-rtdb.firebaseio.com",
+  projectId: "fourxghana",
+  storageBucket: "fourxghana.firebasestorage.app",
+  messagingSenderId: "120782834199",
+  appId: "1:120782834199:web:ad83a8ddf0d497dd9eaa52"
 };
 
 let fbDb = null;
@@ -538,7 +530,7 @@ try {
     }
     fbDb = firebase.database();
     firebaseAvailable = true;
-    console.log('✅ Firebase connected:', firebaseConfig.projectId);
+    console.log('✅ Firebase connected to project:', firebaseConfig.projectId);
   } else {
     throw new Error('Firebase SDK not loaded');
   }
@@ -547,7 +539,7 @@ try {
   firebaseAvailable = false;
 }
 
-/* ==================== DATA / STATE ==================== */
+/* ==================== DATA ==================== */
 
 function defaultBiz(name, type) {
   return {
@@ -560,35 +552,20 @@ function defaultBiz(name, type) {
   };
 }
 
-// Local cache (always present, works offline)
-var data = JSON.parse(localStorage.getItem('bizmanager_v9')) || {
+var data = JSON.parse(localStorage.getItem('bizmanager_v10')) || {
   businesses: [],
   staff: [{ id: 'owner1', name: 'Owner', pin: '1234', role: 'owner', businessId: null }]
 };
 
-// Sync local data to Firebase once on load
-if (firebaseAvailable && data.businesses.length > 0) {
-  fbDb.ref('bizmanager').once('value').then(function(snap) {
-    if (!snap.exists()) {
-      // First time — push local data to cloud
-      fbDb.ref('bizmanager').set(data).catch(function(e) {
-        console.warn('Initial push to Firebase failed:', e);
-      });
-    }
-  });
-}
-
-// Listen for remote changes and merge into local
+// Live sync from Firebase
 if (firebaseAvailable) {
   let initialSync = true;
   fbDb.ref('bizmanager').on('value', function(snap) {
     const remote = snap.val();
     if (remote && (remote.businesses || remote.staff)) {
-      // Only overwrite if remote has content
       if (remote.businesses && remote.businesses.length > 0) {
         data = remote;
-        localStorage.setItem('bizmanager_v9', JSON.stringify(data));
-        // Re-render if user is logged in
+        localStorage.setItem('bizmanager_v10', JSON.stringify(data));
         if (currentUser) render();
         updateCloudStatus('online');
       } else {
@@ -600,10 +577,18 @@ if (firebaseAvailable) {
       }
     } else {
       updateCloudStatus('online');
+      // If cloud is empty but we have local data, push it up
+      if (initialSync && data.businesses.length > 0) {
+        fbDb.ref('bizmanager').set(data).then(function() {
+          toast('☁️ Data uploaded to cloud', 'success');
+        });
+      }
+      initialSync = false;
     }
   }, function(error) {
     console.error('Firebase listener error:', error);
     updateCloudStatus('offline');
+    toast('⚠️ Cloud sync error: ' + error.code, 'warning');
   });
 }
 
@@ -621,12 +606,9 @@ var activeGame = 'snake';
 var posSearchQuery = '';
 var invSearchQuery = '';
 
-/* ==================== SAVE (local + cloud) ==================== */
+/* Save to local + cloud */
 function save() {
-  // 1. Always write to localStorage (instant, offline)
-  localStorage.setItem('bizmanager_v9', JSON.stringify(data));
-
-  // 2. Push to Firebase (async, fire-and-forget)
+  localStorage.setItem('bizmanager_v10', JSON.stringify(data));
   if (firebaseAvailable && fbDb) {
     updateCloudStatus('syncing');
     fbDb.ref('bizmanager').set(data)
@@ -634,16 +616,15 @@ function save() {
       .catch(function(e) {
         console.warn('Firebase save failed:', e);
         updateCloudStatus('offline');
+        toast('Cloud save failed — saved locally', 'warning');
       });
   }
 }
 
-/* ==================== CLOUD STATUS ==================== */
 function updateCloudStatus(state) {
-  const el = document.getElementById('cloudStatus');
-  const txt = document.getElementById('cloudStatusText');
+  var el = document.getElementById('cloudStatus');
+  var txt = document.getElementById('cloudStatusText');
   if (!el || !txt) return;
-
   if (state === 'offline') {
     el.classList.add('offline');
     el.classList.remove('syncing');
@@ -775,7 +756,6 @@ function logout() {
   toast('Logged out', 'info');
 }
 
-/* ==================== BUSINESS ==================== */
 function addBusiness() {
   if (!can('manage_business')) return toast('No permission', 'error');
   var name = document.getElementById('bizName').value.trim();
@@ -831,7 +811,7 @@ function deleteBusiness(id) {
   render();
 }
 
-/* ==================== IMPORT ==================== */
+/* Import / Export */
 function splitCsvRow(headers, value) {
   var h = headers.split(',').map(function(s){ return s.trim().toLowerCase(); });
   var v = String(value == null ? '' : value).split(',').map(function(s){ return s.trim(); });
@@ -859,13 +839,10 @@ function normProduct(p, mode) {
   var name = p.name != null ? p.name : (p['product name'] != null ? p['product name'] : 'Unnamed Product');
   var cat = p.category != null ? p.category : (mode === 'food' ? 'Food' : 'General');
   return {
-    id: p.id || uid(),
-    name: String(name).trim(),
+    id: p.id || uid(), name: String(name).trim(),
     category: String(cat).trim() || 'General',
-    cost: Number(cost) || 0,
-    price: Number(price) || 0,
-    stock: Number(stock) || 0,
-    minStock: Number(min) || 5,
+    cost: Number(cost) || 0, price: Number(price) || 0,
+    stock: Number(stock) || 0, minStock: Number(min) || 5,
     image: p.image || null
   };
 }
@@ -874,17 +851,12 @@ function normBusiness(b) {
   var inv = b.inventory || b.products || [];
   var foodInv = (b.food && b.food.inventory) || [];
   return {
-    id: b.id || uid(),
-    name: b.name || 'Imported Business',
-    type: b.type || 'other',
-    currency: b.currency || 'GH₵',
+    id: b.id || uid(), name: b.name || 'Imported Business',
+    type: b.type || 'other', currency: b.currency || 'GH₵',
     mode: b.mode || (b.type === 'food' ? 'food' : 'bar'),
-    reportPhone: b.reportPhone || '',
-    reportEmail: b.reportEmail || '',
+    reportPhone: b.reportPhone || '', reportEmail: b.reportEmail || '',
     inventory: inv.map(function(p){ return normProduct(p, 'bar'); }),
-    sales: b.sales || [],
-    audits: b.audits || [],
-    imports: b.imports || [],
+    sales: b.sales || [], audits: b.audits || [], imports: b.imports || [],
     food: {
       inventory: foodInv.map(function(p){ return normProduct(p, 'food'); }),
       sales: (b.food && b.food.sales) || []
@@ -959,7 +931,6 @@ function undoImport(importId) {
   render();
 }
 
-/* ==================== PRODUCTS ==================== */
 function previewImage(input) {
   var file = input.files[0]; if (!file) return;
   var reader = new FileReader();
@@ -1041,7 +1012,6 @@ function deleteProduct(id) {
   render();
 }
 
-/* ==================== STAFF ==================== */
 function addStaff() {
   if (!can('manage_staff')) return toast('No permission', 'error');
   var name = document.getElementById('staffName').value.trim();
@@ -1072,7 +1042,6 @@ function deleteStaff(id) {
   render();
 }
 
-/* ==================== CART ==================== */
 function addToCart(id) {
   var p = activeInv(currentBiz()).find(function(x){ return x.id === id; });
   if (!p || p.stock <= 0) return;
@@ -1113,10 +1082,8 @@ function checkout() {
     items: cart.map(function(i){ return {productId:i.id,name:i.name,qty:i.qty,price:i.price,cost:i.cost||0,lineTotal:i.price*i.qty}; }),
     total: total,
     payment: paymentMethod,
-    staff: currentUser.name,
-    staffId: currentUser.id,
-    mode: currentMode,
-    date: new Date().toISOString()
+    staff: currentUser.name, staffId: currentUser.id,
+    mode: currentMode, date: new Date().toISOString()
   };
   if (currentMode === 'food') biz.food.sales.push(sale);
   else biz.sales.push(sale);
@@ -1125,7 +1092,6 @@ function checkout() {
   render();
 }
 
-/* ==================== AUDIT ==================== */
 function openAudit(productId) {
   var p = activeInv(currentBiz()).find(function(x){ return x.id === productId; });
   if (!p) return;
@@ -1182,7 +1148,6 @@ function confirmAudit() {
   render();
 }
 
-/* ==================== DAY VIEW ==================== */
 function openDay(dateStr) {
   var biz = currentBiz();
   var sales = activeSales(biz).filter(function(s){ return dayKey(s.date) === dateStr; });
@@ -1208,7 +1173,6 @@ function openDay(dateStr) {
   openModal('dayModal');
 }
 
-/* ==================== SEND REPORT ==================== */
 function buildReportText() {
   var biz = currentBiz();
   if (!biz) return '';
@@ -1247,10 +1211,7 @@ function buildReportText() {
   }
   return text;
 }
-function openSendModal() {
-  if (!currentBiz()) return;
-  openModal('sendModal');
-}
+function openSendModal() { if (currentBiz()) openModal('sendModal'); }
 function sendViaWhatsApp() {
   try {
     var biz = currentBiz();
@@ -1293,16 +1254,14 @@ function fallbackCopy(text) {
   toast('Report copied', 'success');
 }
 function openReportSettings() {
-  var biz = currentBiz();
-  if (!biz) return;
+  var biz = currentBiz(); if (!biz) return;
   document.getElementById('reportPhone').value = biz.reportPhone || '';
   document.getElementById('reportEmail').value = biz.reportEmail || '';
   closeModal('sendModal');
   openModal('reportSettingsModal');
 }
 function saveReportSettings() {
-  var biz = currentBiz();
-  if (!biz) return;
+  var biz = currentBiz(); if (!biz) return;
   biz.reportPhone = document.getElementById('reportPhone').value.replace(/\D/g, '');
   biz.reportEmail = document.getElementById('reportEmail').value.trim();
   save();
@@ -1310,7 +1269,6 @@ function saveReportSettings() {
   toast('Report settings saved', 'success');
 }
 
-/* ==================== ADMIN PANEL ==================== */
 function openAdminPanel() {
   var html = '';
   html += '<div style="font-weight:600;margin-bottom:10px;font-size:14px;">All Staff</div>';
@@ -1337,7 +1295,6 @@ function openAdminPanel() {
   openModal('adminModal');
 }
 
-/* ==================== RENDER ==================== */
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 function render() { renderShopList(); renderNav(); renderMain(); }
@@ -1748,7 +1705,7 @@ function renderDataHTML(biz) {
       '</div>';
     }).join('');
   var cloudInfo = firebaseAvailable
-    ? '<div style="background:var(--success-soft);border-radius:10px;padding:12px;font-size:12.5px;color:var(--success);margin-bottom:14px;"><i class="fas fa-cloud"></i> <strong>Cloud sync active</strong> — your data is backed up to Firebase and syncs across all devices.</div>'
+    ? '<div style="background:var(--success-soft);border-radius:10px;padding:12px;font-size:12.5px;color:var(--success);margin-bottom:14px;"><i class="fas fa-cloud"></i> <strong>Cloud sync active</strong> — connected to Firebase project <strong>' + firebaseConfig.projectId + '</strong>. Data syncs across all devices.</div>'
     : '<div style="background:var(--warning-soft);border-radius:10px;padding:12px;font-size:12.5px;color:var(--warning);margin-bottom:14px;"><i class="fas fa-triangle-exclamation"></i> <strong>Offline mode</strong> — Firebase not configured. Data saves locally only.</div>';
   return '<div class="header"><div><h1>Import / Export</h1></div></div>' +
     cloudInfo +
@@ -1761,7 +1718,7 @@ function renderDataHTML(biz) {
     '<div class="card"><div style="font-weight:600;margin-bottom:14px;font-size:15px;"><i class="fas fa-history"></i> Import History</div>' + importsHtml + '</div>';
 }
 
-/* ==================== GAMES ==================== */
+/* Games */
 function initActiveGame() {
   if (activeGame === 'snake') initSnake();
   else if (activeGame === '2048') init2048();
@@ -2076,7 +2033,7 @@ function drawPuzzle(area) {
 }
 
 function exportData() {
-  var payload = {_meta:{app:'BizManager POS',version:9,exportedAt:new Date().toISOString()}, businesses: data.businesses, staff: data.staff};
+  var payload = {_meta:{app:'BizManager POS',version:10,exportedAt:new Date().toISOString()}, businesses: data.businesses, staff: data.staff};
   var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -2088,12 +2045,10 @@ function exportData() {
   toast('Backup exported', 'success');
 }
 
-/* ==================== INIT ==================== */
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('landingScreen').style.display = 'flex';
   updateCloudStatus(firebaseAvailable ? 'online' : 'offline');
   if (firebaseAvailable) {
-    // Watch Firebase connection state
     fbDb.ref('.info/connected').on('value', function(snap) {
       if (snap.val() === true) {
         updateCloudStatus('online');
@@ -2103,8 +2058,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔴 Firebase OFFLINE');
       }
     });
-  } else {
-    console.warn('⚠️ Firebase not configured — app runs in local mode only');
   }
 });
 </script>
